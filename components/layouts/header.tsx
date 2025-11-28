@@ -20,12 +20,12 @@ const Header = () => {
       <nav
         className={`w-full h-[70px] fixed flex items-center z-20 backdrop-blur-md`}
       >
-        <div className="relative container mx-auto px-4 md:px-0 flex justify-between items-center">
+        <div className="relative container mx-auto px-4 xl:px-0 flex justify-between items-center">
           <Link href={`#`} className="text-sm font-amsterdam">
             Phill & Button
           </Link>
           <SearchBar
-            className="hidden md:block w-72 !absolute -translate-x-1/2 left-1/2"
+            className="hidden lg:flex w-72 !absolute -translate-x-1/2 left-1/2"
             handleSubmit={handleSearchSubmit}
           />
           <div className="flex items-center md:gap-14">

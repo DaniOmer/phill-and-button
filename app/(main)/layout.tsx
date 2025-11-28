@@ -7,7 +7,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <Header />
-      <main className="font-roboto">{children}</main>
+      <main className="font-roboto pt-36">{children}</main>
       <Footer />
     </>
   );
