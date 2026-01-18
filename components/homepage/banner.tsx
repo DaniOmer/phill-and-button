@@ -6,7 +6,7 @@ import { MoveRight } from "lucide-react";
 
 const Banner = () => {
   return (
-    <section>
+    <section className="mt-10">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-7">
         <p className="col-span-2 flex-1 text-5xl xl:text-6xl uppercase xl:leading-[5rem]">
           Le style parfait commence <br /> avec des choix audacieux
