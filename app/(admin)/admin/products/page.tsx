@@ -102,10 +102,10 @@ export default function AdminProductsPage() {
               {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
-                    {product.image_url ? (
+                    {product.images && product.images.length > 0 ? (
                       <div className="relative w-12 h-12 rounded overflow-hidden">
                         <Image
-                          src={product.image_url}
+                          src={product.images[0].url}
                           alt={product.name}
                           fill
                           className="object-cover"

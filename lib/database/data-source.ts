@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { join } from "path";
 import { Product } from "./entities/Product";
+import { ProductImage } from "./entities/ProductImage";
 import { Profile } from "./entities/Profile";
 
 // Extraire les informations de connexion depuis l'URL Supabase
@@ -45,7 +46,7 @@ export async function getDataSource(): Promise<DataSource> {
     ssl: {
       rejectUnauthorized: false,
     },
-    entities: [Product, Profile],
+    entities: [Product, ProductImage, Profile],
     synchronize: false, // Ne jamais mettre true en production !
     logging: process.env.NODE_ENV === "development",
   });
@@ -80,7 +81,7 @@ function getDataSourceConfigForCLI() {
     ssl: {
       rejectUnauthorized: false,
     },
-    entities: [Product, Profile],
+    entities: [Product, ProductImage, Profile],
     migrations: [
       join(process.cwd(), "lib", "database", "migrations", "*.{ts,js}"),
     ],

@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from "typeorm";
+import { ProductImage } from "./ProductImage";
 
 @Entity("products")
 export class Product {
@@ -20,9 +22,6 @@ export class Product {
   @Column({ type: "decimal", precision: 10, scale: 2 })
   price: number;
 
-  @Column({ type: "text", nullable: true })
-  image_url: string | null;
-
   @Column({ type: "boolean", default: false })
   is_trending: boolean;
 
@@ -31,6 +30,12 @@ export class Product {
 
   @Column({ type: "text", nullable: true })
   category: string | null;
+
+  @OneToMany(() => ProductImage, (image) => image.product, {
+    cascade: true,
+    eager: false,
+  })
+  images: ProductImage[];
 
   @CreateDateColumn({ type: "timestamptz" })
   created_at: Date;

@@ -15,7 +15,17 @@ async function getProduct(id: string): Promise<Product | null> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(
+      `
+      *,
+      product_images (
+        id,
+        url,
+        order_index,
+        created_at
+      )
+    `
+    )
     .eq("id", id)
     .single();
 
@@ -23,10 +33,24 @@ async function getProduct(id: string): Promise<Product | null> {
     return null;
   }
 
-  return data;
+  // Transformer les données pour avoir images triées par order_index
+  return {
+    ...data,
+    images: ((data as any).product_images || [])
+      .sort((a: any, b: any) => a.order_index - b.order_index)
+      .map((img: any) => ({
+        id: img.id,
+        product_id: data.id,
+        url: img.url,
+        order_index: img.order_index,
+        created_at: img.created_at,
+      })),
+  };
 }
 
-export default async function EditProductPage({ params }: EditProductPageProps) {
+export default async function EditProductPage({
+  params,
+}: EditProductPageProps) {
   const { id } = await params;
   const product = await getProduct(id);
 
