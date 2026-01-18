@@ -20,8 +20,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload, X, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { Upload, X, Loader2, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import CreateCategoryDialog from "@/components/admin/create-category-dialog";
 
 interface ProductFormProps {
   product?: Product;
@@ -33,11 +41,16 @@ export default function ProductForm({ product }: ProductFormProps) {
     product?.images?.map((img) => img.url) || []
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [createCategoryDialogOpen, setCreateCategoryDialogOpen] = useState(false);
+
+  // Charger les catégories
+  const { data: categories = [] } = trpc.categories.getAll.useQuery();
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormInput>({
     resolver: zodResolver(productFormSchema),
@@ -48,9 +61,22 @@ export default function ProductForm({ product }: ProductFormProps) {
       image_urls: product?.images?.map((img) => img.url) || [],
       is_trending: product?.is_trending ?? false,
       stock: product?.stock ?? 0,
-      category: product?.category ?? "",
+      category_id: null, // Sera mis à jour dans useEffect
     },
   });
+
+  // Trouver l'ID de la catégorie une fois les catégories chargées
+  useEffect(() => {
+    if (product?.category && categories.length > 0) {
+      const foundCategory = categories.find((cat) => cat.name === product.category);
+      if (foundCategory) {
+        setValue("category_id", foundCategory.id);
+      }
+    }
+  }, [product?.category, categories, setValue]);
+  
+  // Suivre la valeur actuelle de category_id
+  const currentCategoryId = watch("category_id");
 
   // Synchroniser imageUrls quand le produit change
   useEffect(() => {
@@ -266,12 +292,42 @@ export default function ProductForm({ product }: ProductFormProps) {
 
           {/* Catégorie */}
           <div className="space-y-2">
-            <Label htmlFor="category">Catégorie</Label>
-            <Input
-              id="category"
-              {...register("category")}
-              placeholder="Ex: Vestes, Pantalons, etc."
-            />
+            <Label htmlFor="category_id">Catégorie</Label>
+            <div className="flex gap-2">
+              <Select
+                value={currentCategoryId ?? undefined}
+                onValueChange={(value) => {
+                  // Convertir "__none__" en null, sinon utiliser la valeur
+                  setValue("category_id", value === "__none__" ? null : value);
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Aucune catégorie</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setCreateCategoryDialogOpen(true)}
+                title="Créer une nouvelle catégorie"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {errors.category_id && (
+              <p className="text-sm text-red-600">
+                {errors.category_id.message}
+              </p>
+            )}
           </div>
 
           {/* Images */}
@@ -395,6 +451,16 @@ export default function ProductForm({ product }: ProductFormProps) {
           Annuler
         </Button>
       </div>
+
+      {/* Modale de création de catégorie */}
+      <CreateCategoryDialog
+        open={createCategoryDialogOpen}
+        onOpenChange={setCreateCategoryDialogOpen}
+        onSuccess={(categoryId) => {
+          // Sélectionner automatiquement la nouvelle catégorie
+          setValue("category_id", categoryId);
+        }}
+      />
     </form>
   );
 }

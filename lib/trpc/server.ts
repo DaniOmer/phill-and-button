@@ -43,4 +43,30 @@ export const serverTrpc = {
       return caller.products.getCategories();
     },
   },
+  categories: {
+    getAll: async () => {
+      const caller = await createServerTRPC();
+      return caller.categories.getAll();
+    },
+    getById: async (input: { id: string }) => {
+      const caller = await createServerTRPC();
+      return caller.categories.getById(input);
+    },
+    create: async (input: { name: string; slug?: string | null }) => {
+      const caller = await createServerTRPC();
+      return caller.categories.create(input);
+    },
+    update: async (input: {
+      id: string;
+      name?: string;
+      slug?: string | null;
+    }) => {
+      const caller = await createServerTRPC();
+      return caller.categories.update(input);
+    },
+    delete: async (input: { id: string }) => {
+      const caller = await createServerTRPC();
+      return caller.categories.delete(input);
+    },
+  },
 };

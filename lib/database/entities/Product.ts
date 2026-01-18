@@ -5,8 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 import type { ProductImage } from "./ProductImage";
+import type { ProductCategory } from "./ProductCategory";
 
 @Entity("products")
 export class Product {
@@ -28,8 +31,15 @@ export class Product {
   @Column({ type: "integer", default: 0 })
   stock: number;
 
-  @Column({ type: "text", nullable: true })
-  category: string | null;
+  @Column({ type: "uuid", nullable: true })
+  category_id: string | null;
+
+  @ManyToOne("ProductCategory", {
+    nullable: true,
+    eager: false,
+  })
+  @JoinColumn({ name: "category_id" })
+  category: ProductCategory | null;
 
   @OneToMany("ProductImage", "product", {
     cascade: true,

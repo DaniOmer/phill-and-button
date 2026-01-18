@@ -20,7 +20,7 @@ export const productSchema = z.object({
     .int()
     .nonnegative("Le stock doit être positif ou nul")
     .default(0),
-  category: z.string().optional().nullable(),
+  category_id: z.string().uuid().optional().nullable(),
 });
 
 /**
@@ -38,7 +38,7 @@ export const productFormSchema = z.object({
     .max(10, "Maximum 10 images par produit"),
   is_trending: z.boolean(),
   stock: z.number().int().nonnegative("Le stock doit être positif ou nul"),
-  category: z.string().optional().nullable(),
+  category_id: z.string().uuid().optional().nullable(),
 });
 
 export const createProductSchema = productSchema;

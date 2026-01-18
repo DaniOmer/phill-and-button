@@ -29,24 +29,26 @@ export const productsRouter = router({
       try {
         const repository = await getProductRepository();
 
-        const where: any = {};
+        const queryBuilder = repository
+          .createQueryBuilder("product")
+          .leftJoinAndSelect("product.images", "images")
+          .leftJoinAndSelect("product.category", "category");
+
         if (input?.category) {
-          where.category = input.category;
+          queryBuilder.where("category.name = :categoryName", {
+            categoryName: input.category,
+          });
         }
         if (input?.search) {
-          where.name = ILike(`%${input.search}%`);
+          queryBuilder.andWhere("product.name ILIKE :search", {
+            search: `%${input.search}%`,
+          });
         }
 
-        const products = await repository.find({
-          where,
-          relations: ["images"],
-          order: {
-            created_at: "DESC",
-            images: {
-              order_index: "ASC",
-            },
-          },
-        });
+        queryBuilder.orderBy("product.created_at", "DESC");
+        queryBuilder.addOrderBy("images.order_index", "ASC");
+
+        const products = await queryBuilder.getMany();
 
         return products.map(transformProduct);
       } catch (error) {
@@ -70,7 +72,7 @@ export const productsRouter = router({
 
       const products = await repository.find({
         where: { is_trending: true },
-        relations: ["images"],
+        relations: ["images", "category"],
         order: {
           created_at: "DESC",
           images: {
@@ -100,7 +102,7 @@ export const productsRouter = router({
 
         const product = await repository.findOne({
           where: { id: input.id },
-          relations: ["images"],
+          relations: ["images", "category"],
           order: {
             images: {
               order_index: "ASC",
@@ -129,22 +131,21 @@ export const productsRouter = router({
 
   /**
    * Route publique : récupère les catégories uniques
+   * Utilise maintenant ProductCategory au lieu de DISTINCT
    */
   getCategories: publicProcedure.query(async () => {
     try {
-      const repository = await getProductRepository();
+      const { getCategoryRepository } = await import("@/lib/database");
+      const categoryRepository = await getCategoryRepository();
 
-      const products = await repository
-        .createQueryBuilder("product")
-        .select("DISTINCT product.category", "category")
-        .where("product.category IS NOT NULL")
-        .getRawMany();
+      const categories = await categoryRepository.find({
+        order: {
+          name: "ASC",
+        },
+      });
 
-      const categories = products
-        .map((p) => p.category)
-        .filter((cat): cat is string => Boolean(cat));
-
-      return [...new Set(categories)];
+      // Retourner uniquement les noms pour la compatibilité avec l'API existante
+      return categories.map((cat) => cat.name);
     } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -186,7 +187,7 @@ export const productsRouter = router({
         // Recharger avec les relations pour avoir toutes les données
         const productWithImages = await repository.findOne({
           where: { id: savedProduct.id },
-          relations: ["images"],
+          relations: ["images", "category"],
           order: {
             images: {
               order_index: "ASC",
@@ -261,7 +262,7 @@ export const productsRouter = router({
         // Recharger le produit avec ses images
         const productWithImages = await repository.findOne({
           where: { id },
-          relations: ["images"],
+          relations: ["images", "category"],
           order: {
             images: {
               order_index: "ASC",

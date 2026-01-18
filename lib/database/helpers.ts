@@ -39,7 +39,7 @@ export function transformProduct(product: ProductEntity): Product {
     images: sortedImages,
     is_trending: product.is_trending,
     stock: product.stock,
-    category: product.category,
+    category: product.category?.name ?? null, // Utiliser le nom de la catégorie si disponible
     created_at: product.created_at.toISOString(),
     updated_at: product.updated_at.toISOString(),
   };
