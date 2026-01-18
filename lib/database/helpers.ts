@@ -35,11 +35,11 @@ export function transformProduct(product: ProductEntity): Product {
     id: product.id,
     name: product.name,
     description: product.description,
-    price: Number(product.price), // Convertir decimal en number
+    price: Number(product.price),
     images: sortedImages,
     is_trending: product.is_trending,
     stock: product.stock,
-    category: product.category?.name ?? null, // Utiliser le nom de la catégorie si disponible
+    category: product.category?.name ?? null,
     created_at: product.created_at.toISOString(),
     updated_at: product.updated_at.toISOString(),
   };

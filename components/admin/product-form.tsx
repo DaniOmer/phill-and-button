@@ -41,7 +41,8 @@ export default function ProductForm({ product }: ProductFormProps) {
     product?.images?.map((img) => img.url) || []
   );
   const [isUploading, setIsUploading] = useState(false);
-  const [createCategoryDialogOpen, setCreateCategoryDialogOpen] = useState(false);
+  const [createCategoryDialogOpen, setCreateCategoryDialogOpen] =
+    useState(false);
 
   // Charger les catégories
   const { data: categories = [] } = trpc.categories.getAll.useQuery();
@@ -68,13 +69,15 @@ export default function ProductForm({ product }: ProductFormProps) {
   // Trouver l'ID de la catégorie une fois les catégories chargées
   useEffect(() => {
     if (product?.category && categories.length > 0) {
-      const foundCategory = categories.find((cat) => cat.name === product.category);
+      const foundCategory = categories.find(
+        (cat) => cat.name === product.category
+      );
       if (foundCategory) {
         setValue("category_id", foundCategory.id);
       }
     }
   }, [product?.category, categories, setValue]);
-  
+
   // Suivre la valeur actuelle de category_id
   const currentCategoryId = watch("category_id");
 

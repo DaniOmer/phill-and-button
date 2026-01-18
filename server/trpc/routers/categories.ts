@@ -23,7 +23,9 @@ export const categoriesRouter = router({
     } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: `Erreur lors de la récupération des catégories: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Erreur lors de la récupération des catégories: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     }
   }),
@@ -54,7 +56,9 @@ export const categoriesRouter = router({
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Erreur lors de la récupération de la catégorie: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Erreur lors de la récupération de la catégorie: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         });
       }
     }),
@@ -131,7 +135,9 @@ export const categoriesRouter = router({
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Erreur lors de la création de la catégorie: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Erreur lors de la création de la catégorie: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         });
       }
     }),
@@ -217,7 +223,9 @@ export const categoriesRouter = router({
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Erreur lors de la mise à jour de la catégorie: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Erreur lors de la mise à jour de la catégorie: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         });
       }
     }),
@@ -263,7 +271,9 @@ export const categoriesRouter = router({
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Erreur lors de la suppression de la catégorie: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Erreur lors de la suppression de la catégorie: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         });
       }
     }),
