@@ -31,10 +31,10 @@ const Header = () => {
           <div className="flex items-center md:gap-14">
             <ul className="hidden md:flex gap-6">
               <li className="hover:underline">
-                <Link href={`#`}>Boutique</Link>
+                <Link href={`/store`}>Boutique</Link>
               </li>
               <li className="hover:underline">
-                <Link href={`#`}>FAQs</Link>
+                <Link href={`/faq`}>FAQs</Link>
               </li>
             </ul>
             <div className="flex gap-4 items-center">

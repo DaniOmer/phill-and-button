@@ -18,8 +18,8 @@ export default function AdminLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b">
-            <Link href="/admin" className="text-xl font-amsterdam">
-              Admin Panel
+            <Link href="/admin" className="text-xl">
+              Gestion de stock
             </Link>
           </div>
 

@@ -1,16 +1,12 @@
-/**
- * Page Boutique - Affiche tous les produits
- * Inclut la recherche et les filtres par catégorie
- */
 import { Suspense } from "react";
 import StoreContent from "./store-content";
 
-export const revalidate = 60; // ISR - revalidation toutes les 60 secondes
+export const revalidate = 60;
 
 export default function StorePage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-amsterdam text-center mb-8">Notre Boutique</h1>
+      <h1 className="text-4xl text-center mb-8">Notre Boutique</h1>
       <Suspense fallback={<StoreLoading />}>
         <StoreContent />
       </Suspense>

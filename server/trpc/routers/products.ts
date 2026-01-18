@@ -4,12 +4,13 @@
  */
 import { z } from "zod";
 import { router, publicProcedure, adminProcedure } from "../trpc";
-import {
-  createServerSupabaseClient,
-  createServiceRoleClient,
-} from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createProductSchema, updateProductSchema } from "@/types/product";
 import { TRPCError } from "@trpc/server";
+import { getProductRepository, getDataSource } from "@/lib/database";
+import { Product, ProductImage } from "@/lib/database/entities";
+import { ILike } from "typeorm";
+import { transformProduct } from "@/lib/database/helpers";
 
 export const productsRouter = router({
   /**
@@ -25,98 +26,67 @@ export const productsRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
-      const supabase = await createServerSupabaseClient();
+      try {
+        const repository = await getProductRepository();
 
-      let query = supabase
-        .from("products")
-        .select(
-          `
-          *,
-          product_images (
-            id,
-            url,
-            order_index,
-            created_at
-          )
-        `
-        )
-        .order("created_at", { ascending: false });
+        const where: any = {};
+        if (input?.category) {
+          where.category = input.category;
+        }
+        if (input?.search) {
+          where.name = ILike(`%${input.search}%`);
+        }
 
-      if (input?.category) {
-        query = query.eq("category", input.category);
-      }
+        const products = await repository.find({
+          where,
+          relations: ["images"],
+          order: {
+            created_at: "DESC",
+            images: {
+              order_index: "ASC",
+            },
+          },
+        });
 
-      if (input?.search) {
-        query = query.ilike("name", `%${input.search}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
+        return products.map(transformProduct);
+      } catch (error) {
+        console.error("Error in getAll:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Erreur lors de la récupération des produits",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Erreur lors de la récupération des produits",
         });
       }
-
-      // Transformer les données pour avoir images triées par order_index
-      return (data || []).map((product: any) => ({
-        ...product,
-        images: (product.product_images || [])
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((img: any) => ({
-            id: img.id,
-            product_id: product.id,
-            url: img.url,
-            order_index: img.order_index,
-            created_at: img.created_at,
-          })),
-      }));
     }),
 
   /**
    * Route publique : récupère les produits tendance
    */
   getTrending: publicProcedure.query(async () => {
-    const supabase = await createServerSupabaseClient();
+    try {
+      const repository = await getProductRepository();
 
-    const { data, error } = await supabase
-      .from("products")
-      .select(
-        `
-        *,
-        product_images (
-          id,
-          url,
-          order_index,
-          created_at
-        )
-      `
-      )
-      .eq("is_trending", true)
-      .order("created_at", { ascending: false })
-      .limit(6);
+      const products = await repository.find({
+        where: { is_trending: true },
+        relations: ["images"],
+        order: {
+          created_at: "DESC",
+          images: {
+            order_index: "ASC",
+          },
+        },
+        take: 6,
+      });
 
-    if (error) {
+      return products.map(transformProduct);
+    } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Erreur lors de la récupération des produits tendance",
       });
     }
-
-    // Transformer les données pour avoir images triées par order_index
-    return (data || []).map((product: any) => ({
-      ...product,
-      images: (product.product_images || [])
-        .sort((a: any, b: any) => a.order_index - b.order_index)
-        .map((img: any) => ({
-          id: img.id,
-          product_id: product.id,
-          url: img.url,
-          order_index: img.order_index,
-          created_at: img.created_at,
-        })),
-    }));
   }),
 
   /**
@@ -125,69 +95,62 @@ export const productsRouter = router({
   getById: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
-      const supabase = await createServerSupabaseClient();
+      try {
+        const repository = await getProductRepository();
 
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          `
-          *,
-          product_images (
-            id,
-            url,
-            order_index,
-            created_at
-          )
-        `
-        )
-        .eq("id", input.id)
-        .single();
+        const product = await repository.findOne({
+          where: { id: input.id },
+          relations: ["images"],
+          order: {
+            images: {
+              order_index: "ASC",
+            },
+          },
+        });
 
-      if (error) {
+        if (!product) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Produit non trouvé",
+          });
+        }
+
+        return transformProduct(product);
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Produit non trouvé",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erreur lors de la récupération du produit",
         });
       }
-
-      // Transformer les données pour avoir images triées par order_index
-      return {
-        ...data,
-        images: ((data as any).product_images || [])
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((img: any) => ({
-            id: img.id,
-            product_id: data.id,
-            url: img.url,
-            order_index: img.order_index,
-            created_at: img.created_at,
-          })),
-      };
     }),
 
   /**
    * Route publique : récupère les catégories uniques
    */
   getCategories: publicProcedure.query(async () => {
-    const supabase = await createServerSupabaseClient();
+    try {
+      const repository = await getProductRepository();
 
-    const { data, error } = await supabase
-      .from("products")
-      .select("category")
-      .not("category", "is", null);
+      const products = await repository
+        .createQueryBuilder("product")
+        .select("DISTINCT product.category", "category")
+        .where("product.category IS NOT NULL")
+        .getRawMany();
 
-    if (error) {
+      const categories = products
+        .map((p) => p.category)
+        .filter((cat): cat is string => Boolean(cat));
+
+      return [...new Set(categories)];
+    } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Erreur lors de la récupération des catégories",
       });
     }
-
-    // Extraire les catégories uniques
-    const categories = [
-      ...new Set(data.map((p) => p.category).filter(Boolean)),
-    ];
-    return categories as string[];
   }),
 
   /**
@@ -196,81 +159,58 @@ export const productsRouter = router({
   create: adminProcedure
     .input(createProductSchema)
     .mutation(async ({ input }) => {
-      const supabase = createServiceRoleClient();
-      const { image_urls, ...productData } = input;
+      try {
+        const repository = await getProductRepository();
+        const { image_urls = [], ...productData } = input;
 
-      // Créer le produit
-      const { data: product, error: productError } = await supabase
-        .from("products")
-        .insert(productData)
-        .select()
-        .single();
+        // Créer les images si fournies
+        const images =
+          image_urls.length > 0
+            ? image_urls.map((url, index) =>
+                repository.manager.create(ProductImage, {
+                  url,
+                  order_index: index,
+                })
+              )
+            : [];
 
-      if (productError) {
+        // Créer le produit avec les images
+        const product = repository.create({
+          ...productData,
+          images,
+        });
+
+        // Sauvegarder (la cascade créera automatiquement les images)
+        const savedProduct = await repository.save(product);
+
+        // Recharger avec les relations pour avoir toutes les données
+        const productWithImages = await repository.findOne({
+          where: { id: savedProduct.id },
+          relations: ["images"],
+          order: {
+            images: {
+              order_index: "ASC",
+            },
+          },
+        });
+
+        if (!productWithImages) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Erreur lors de la récupération du produit",
+          });
+        }
+
+        return transformProduct(productWithImages);
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erreur lors de la création du produit",
         });
       }
-
-      // Créer les images si fournies
-      if (image_urls && image_urls.length > 0) {
-        const imagesToInsert = image_urls.map((url, index) => ({
-          product_id: product.id,
-          url,
-          order_index: index,
-        }));
-
-        const { error: imagesError } = await supabase
-          .from("product_images")
-          .insert(imagesToInsert);
-
-        if (imagesError) {
-          // Supprimer le produit si l'insertion des images échoue
-          await supabase.from("products").delete().eq("id", product.id);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Erreur lors de la création des images",
-          });
-        }
-      }
-
-      // Récupérer le produit avec ses images
-      const { data: productWithImages, error: fetchError } = await supabase
-        .from("products")
-        .select(
-          `
-          *,
-          product_images (
-            id,
-            url,
-            order_index,
-            created_at
-          )
-        `
-        )
-        .eq("id", product.id)
-        .single();
-
-      if (fetchError) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Erreur lors de la récupération du produit",
-        });
-      }
-
-      return {
-        ...productWithImages,
-        images: ((productWithImages as any).product_images || [])
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((img: any) => ({
-            id: img.id,
-            product_id: product.id,
-            url: img.url,
-            order_index: img.order_index,
-            created_at: img.created_at,
-          })),
-      };
     }),
 
   /**
@@ -279,84 +219,73 @@ export const productsRouter = router({
   update: adminProcedure
     .input(updateProductSchema)
     .mutation(async ({ input }) => {
-      const { id, image_urls, ...updateData } = input;
-      const supabase = createServiceRoleClient();
+      try {
+        const repository = await getProductRepository();
+        const dataSource = await getDataSource();
+        const imageRepository = dataSource.getRepository(ProductImage);
+        const { id, image_urls, ...updateData } = input;
 
-      // Mettre à jour le produit
-      const { error: productError } = await supabase
-        .from("products")
-        .update({ ...updateData, updated_at: new Date().toISOString() })
-        .eq("id", id);
+        // Vérifier que le produit existe
+        const existingProduct = await repository.findOne({
+          where: { id },
+        });
 
-      if (productError) {
+        if (!existingProduct) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Produit non trouvé",
+          });
+        }
+
+        // Mettre à jour le produit
+        await repository.update(id, updateData);
+
+        // Si image_urls est fourni, mettre à jour les images
+        if (image_urls !== undefined) {
+          // Supprimer toutes les images existantes
+          await imageRepository.delete({ product_id: id });
+
+          // Créer les nouvelles images si fournies
+          if (image_urls.length > 0) {
+            const imagesToInsert = image_urls.map((url, index) =>
+              imageRepository.create({
+                product_id: id,
+                url,
+                order_index: index,
+              })
+            );
+            await imageRepository.save(imagesToInsert);
+          }
+        }
+
+        // Recharger le produit avec ses images
+        const productWithImages = await repository.findOne({
+          where: { id },
+          relations: ["images"],
+          order: {
+            images: {
+              order_index: "ASC",
+            },
+          },
+        });
+
+        if (!productWithImages) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Erreur lors de la récupération du produit",
+          });
+        }
+
+        return transformProduct(productWithImages);
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erreur lors de la mise à jour du produit",
         });
       }
-
-      // Si image_urls est fourni, mettre à jour les images
-      if (image_urls !== undefined) {
-        // Supprimer toutes les images existantes
-        await supabase.from("product_images").delete().eq("product_id", id);
-
-        // Créer les nouvelles images si fournies
-        if (image_urls.length > 0) {
-          const imagesToInsert = image_urls.map((url, index) => ({
-            product_id: id,
-            url,
-            order_index: index,
-          }));
-
-          const { error: imagesError } = await supabase
-            .from("product_images")
-            .insert(imagesToInsert);
-
-          if (imagesError) {
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Erreur lors de la mise à jour des images",
-            });
-          }
-        }
-      }
-
-      // Récupérer le produit avec ses images
-      const { data: productWithImages, error: fetchError } = await supabase
-        .from("products")
-        .select(
-          `
-          *,
-          product_images (
-            id,
-            url,
-            order_index,
-            created_at
-          )
-        `
-        )
-        .eq("id", id)
-        .single();
-
-      if (fetchError) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Erreur lors de la récupération du produit",
-        });
-      }
-
-      return {
-        ...productWithImages,
-        images: ((productWithImages as any).product_images || [])
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((img: any) => ({
-            id: img.id,
-            product_id: id,
-            url: img.url,
-            order_index: img.order_index,
-            created_at: img.created_at,
-          })),
-      };
     }),
 
   /**
@@ -365,21 +294,29 @@ export const productsRouter = router({
   delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const supabase = createServiceRoleClient();
+      try {
+        const repository = await getProductRepository();
 
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", input.id);
+        // La cascade supprimera automatiquement les images
+        const result = await repository.delete(input.id);
 
-      if (error) {
+        if (result.affected === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Produit non trouvé",
+          });
+        }
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erreur lors de la suppression du produit",
         });
       }
-
-      return { success: true };
     }),
 
   /**
@@ -388,42 +325,73 @@ export const productsRouter = router({
   toggleTrending: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const supabase = createServiceRoleClient();
+      try {
+        const repository = await getProductRepository();
 
-      // Récupérer l'état actuel
-      const { data: product, error: fetchError } = await supabase
-        .from("products")
-        .select("is_trending")
-        .eq("id", input.id)
-        .single();
-
-      if (fetchError) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Produit non trouvé",
+        // Récupérer l'état actuel
+        const product = await repository.findOne({
+          where: { id: input.id },
+          select: ["id", "is_trending"],
         });
-      }
 
-      // Toggle
-      const { data, error } = await supabase
-        .from("products")
-        .update({
-          is_trending: !product.is_trending,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", input.id)
-        .select()
-        .single();
+        if (!product) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Produit non trouvé",
+          });
+        }
 
-      if (error) {
+        // Toggle et sauvegarder
+        product.is_trending = !product.is_trending;
+        const updatedProduct = await repository.save(product);
+
+        return {
+          id: updatedProduct.id,
+          is_trending: updatedProduct.is_trending,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erreur lors de la mise à jour du produit",
         });
       }
-
-      return data;
     }),
+
+  /**
+   * Route admin : récupère les statistiques des produits
+   */
+  getStats: adminProcedure.query(async () => {
+    try {
+      const repository = await getProductRepository();
+
+      // Compter tous les produits
+      const totalProducts = await repository.count();
+
+      // Compter les produits tendance
+      const trendingProducts = await repository.count({
+        where: { is_trending: true },
+      });
+
+      // Compter les produits en rupture de stock
+      const outOfStock = await repository.count({
+        where: { stock: 0 },
+      });
+
+      return {
+        totalProducts,
+        trendingProducts,
+        outOfStock,
+      };
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Erreur lors de la récupération des statistiques",
+      });
+    }
+  }),
 
   /**
    * Route admin : upload d'image

@@ -3,6 +3,7 @@ import { Product } from "./entities/Product";
 import { Profile } from "./entities/Profile";
 
 export { Product, Profile } from "./entities";
+export { getDataSource } from "./data-source";
 
 /**
  * Récupère le repository Product

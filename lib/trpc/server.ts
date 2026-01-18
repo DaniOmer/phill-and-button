@@ -1,23 +1,46 @@
 /**
  * Client tRPC pour les Server Components
  * Permet d'appeler les procedures tRPC côté serveur
+ * Appelle directement le router sans passer par HTTP pour préserver l'authentification
  */
-import 'server-only'
-import { createTRPCClient, httpBatchLink } from '@trpc/client'
-import superjson from 'superjson'
-import type { AppRouter } from '@/server/trpc/root'
+import "server-only";
+import { appRouter } from "@/server/trpc/root";
+import { createContext } from "@/server/trpc/context";
 
-function getBaseUrl() {
-  if (typeof window !== 'undefined') return ''
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return `http://localhost:${process.env.PORT ?? 3000}`
+/**
+ * Crée un caller tRPC avec le contexte d'authentification
+ * Utilise directement le router sans passer par HTTP
+ */
+export async function createServerTRPC() {
+  const context = await createContext();
+  return appRouter.createCaller(context);
 }
 
-export const serverTrpc = createTRPCClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: `${getBaseUrl()}/api/trpc`,
-      transformer: superjson,
-    }),
-  ],
-})
+/**
+ * Helper pour appeler les procedures tRPC depuis les Server Components
+ * Appelle directement le router avec le contexte d'authentification
+ */
+export const serverTrpc = {
+  products: {
+    getById: async (input: { id: string }) => {
+      const caller = await createServerTRPC();
+      return caller.products.getById(input);
+    },
+    getStats: async () => {
+      const caller = await createServerTRPC();
+      return caller.products.getStats();
+    },
+    getAll: async (input?: { category?: string; search?: string }) => {
+      const caller = await createServerTRPC();
+      return caller.products.getAll(input);
+    },
+    getTrending: async () => {
+      const caller = await createServerTRPC();
+      return caller.products.getTrending();
+    },
+    getCategories: async () => {
+      const caller = await createServerTRPC();
+      return caller.products.getCategories();
+    },
+  },
+};

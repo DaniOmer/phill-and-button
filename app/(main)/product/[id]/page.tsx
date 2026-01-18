@@ -1,10 +1,6 @@
-/**
- * Page de détail d'un produit
- * Affiche toutes les informations et le bouton WhatsApp pour commander
- */
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { serverTrpc } from "@/lib/trpc/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageCircle, Package } from "lucide-react";
@@ -18,41 +14,13 @@ interface ProductPageProps {
 }
 
 async function getProduct(id: string): Promise<Product | null> {
-  const supabase = await createServerSupabaseClient();
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      `
-      *,
-      product_images (
-        id,
-        url,
-        order_index,
-        created_at
-      )
-    `
-    )
-    .eq("id", id)
-    .single();
-
-  if (error) {
+  try {
+    const product = await serverTrpc.products.getById({ id });
+    return product;
+  } catch (error) {
+    // Si le produit n'existe pas, tRPC lance une erreur NOT_FOUND
     return null;
   }
-
-  // Transformer les données pour avoir images triées par order_index
-  return {
-    ...data,
-    images: ((data as any).product_images || [])
-      .sort((a: any, b: any) => a.order_index - b.order_index)
-      .map((img: any) => ({
-        id: img.id,
-        product_id: data.id,
-        url: img.url,
-        order_index: img.order_index,
-        created_at: img.created_at,
-      })),
-  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -108,9 +76,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <Badge variant="secondary">{product.category}</Badge>
           )}
 
-          <h1 className="text-3xl lg:text-4xl font-amsterdam">
-            {product.name}
-          </h1>
+          <h1 className="text-3xl lg:text-4xl">{product.name}</h1>
 
           <p className="text-2xl font-semibold text-primary">
             {formatPrice(product.price)}

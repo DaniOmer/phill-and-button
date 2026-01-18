@@ -81,7 +81,7 @@ function getDataSourceConfigForCLI() {
     ssl: {
       rejectUnauthorized: false,
     },
-    entities: [Product, ProductImage, Profile],
+    entities: [join(process.cwd(), "lib", "database", "entities", "*.{ts,js}")],
     migrations: [
       join(process.cwd(), "lib", "database", "migrations", "*.{ts,js}"),
     ],

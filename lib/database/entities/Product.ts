@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { ProductImage } from "./ProductImage";
+import type { ProductImage } from "./ProductImage";
 
 @Entity("products")
 export class Product {
@@ -31,7 +31,7 @@ export class Product {
   @Column({ type: "text", nullable: true })
   category: string | null;
 
-  @OneToMany(() => ProductImage, (image) => image.product, {
+  @OneToMany("ProductImage", "product", {
     cascade: true,
     eager: false,
   })

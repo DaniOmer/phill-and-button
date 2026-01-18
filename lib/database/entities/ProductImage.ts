@@ -6,7 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
 } from "typeorm";
-import { Product } from "./Product";
+import type { Product } from "./Product";
 
 @Entity("product_images")
 export class ProductImage {
@@ -16,7 +16,7 @@ export class ProductImage {
   @Column({ type: "uuid" })
   product_id: string;
 
-  @ManyToOne(() => Product, (product) => product.images, {
+  @ManyToOne("Product", "images", {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "product_id" })
