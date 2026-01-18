@@ -24,10 +24,10 @@ const Header = () => {
           <Link href={`/`} className="text-sm font-amsterdam font-semibold">
             Phill & Button
           </Link>
-          <SearchBar
+          {/* <SearchBar
             className="hidden lg:flex w-72 !absolute -translate-x-1/2 left-1/2"
             handleSubmit={handleSearchSubmit}
-          />
+          /> */}
           <div className="flex items-center md:gap-14">
             <ul className="hidden md:flex gap-6">
               <li className="hover:underline">

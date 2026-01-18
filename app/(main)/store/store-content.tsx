@@ -1,10 +1,6 @@
-/**
- * Contenu de la page boutique (client component)
- * Gère les filtres et la recherche
- */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 import ProductGrid from "@/components/public/product-grid";
 import { Input } from "@/components/ui/input";
@@ -18,31 +14,29 @@ import {
 import { Search } from "lucide-react";
 
 export default function StoreContent() {
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
 
-  // Récupérer les produits avec filtres
-  const { data: products, isLoading } = trpc.products.getAll.useQuery({
-    search: search || undefined,
-    category: category === "all" ? undefined : category,
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
 
-  // Récupérer les catégories disponibles
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const { data: products, isFetching } = trpc.products.getAll.useQuery(
+    {
+      search: search || undefined,
+      category: category === "all" ? undefined : category,
+    },
+    {
+      placeholderData: (previousData) => previousData,
+    }
+  );
+
   const { data: categories } = trpc.products.getCategories.useQuery();
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <div className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
-            <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -53,8 +47,8 @@ export default function StoreContent() {
           <Input
             type="text"
             placeholder="Rechercher un produit..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -76,10 +70,25 @@ export default function StoreContent() {
       {/* Nombre de résultats */}
       <p className="text-sm text-gray-500">
         {products?.length ?? 0} produit(s) trouvé(s)
+        {isFetching && search && (
+          <span className="ml-2 text-gray-400">(recherche en cours...)</span>
+        )}
       </p>
 
       {/* Grille de produits */}
-      <ProductGrid products={products ?? []} />
+      {isFetching && !products ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse" />
+              <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ProductGrid products={products ?? []} />
+      )}
     </div>
   );
 }

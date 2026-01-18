@@ -99,25 +99,37 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Bouton WhatsApp */}
-          <Button
-            asChild
-            size="lg"
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
-            disabled={product.stock === 0}
-          >
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
+          {product.stock > 0 ? (
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
             >
-              <MessageCircle className="h-5 w-5" />
-              Commander via WhatsApp
-            </a>
-          </Button>
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Commander via WhatsApp
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full sm:w-auto bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
+              disabled
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Indisponible
+            </Button>
+          )}
 
           <p className="text-sm text-gray-500">
-            Cliquez pour ouvrir WhatsApp avec un message pré-rempli
+            {product.stock > 0
+              ? "Cliquez pour ouvrir WhatsApp avec un message pré-rempli"
+              : "Ce produit est actuellement en rupture de stock"}
           </p>
         </div>
       </div>
