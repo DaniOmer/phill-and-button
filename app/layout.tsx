@@ -36,6 +36,8 @@ export const metadata: Metadata = {
   description: "Marque de vêtement haut de gamme.",
 };
 
+import { TRPCProvider } from "@/lib/trpc/provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,7 +48,7 @@ export default function RootLayout({
       <body
         className={`${amsterdamThree.variable} ${roboto.variable} ${inter.variable} ${lato.variable} antialiased`}
       >
-        {children}
+        <TRPCProvider>{children}</TRPCProvider>
       </body>
     </html>
   );

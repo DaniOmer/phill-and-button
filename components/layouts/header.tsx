@@ -21,7 +21,7 @@ const Header = () => {
         className={`w-full h-[70px] fixed flex items-center z-20 backdrop-blur-md`}
       >
         <div className="relative container mx-auto px-4 xl:px-0 flex justify-between items-center">
-          <Link href={`#`} className="text-sm font-amsterdam font-semibold">
+          <Link href={`/`} className="text-sm font-amsterdam font-semibold">
             Phill & Button
           </Link>
           <SearchBar
