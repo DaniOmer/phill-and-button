@@ -100,6 +100,7 @@ export const productsRouter = router({
 
       return products.map(transformProduct);
     } catch (error) {
+      console.error("Error in getTrending:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Erreur lors de la récupération des produits tendance",

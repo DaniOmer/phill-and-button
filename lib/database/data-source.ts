@@ -35,22 +35,27 @@ export async function getDataSource(): Promise<DataSource> {
     return AppDataSource;
   }
 
-  const config = getConnectionConfig();
+  // En serverless (Vercel), DATABASE_URL doit pointer vers le pooler Supabase
+  // (aws-0-<region>.pooler.supabase.com, IPv4). La connexion directe
+  // db.<ref>.supabase.co est IPv6-only et injoignable depuis Vercel.
+  // À défaut de DATABASE_URL (dev local / CLI), on dérive la connexion directe.
+  const databaseUrl = process.env.DATABASE_URL;
 
-  AppDataSource = new DataSource({
-    type: "postgres",
-    host: config.host,
-    port: config.port,
-    username: config.username,
-    password: config.password,
-    database: config.database,
+  const commonOptions = {
+    type: "postgres" as const,
     ssl: {
       rejectUnauthorized: false,
     },
     entities: [Product, ProductImage, ProductCategory, Profile],
     synchronize: false, // Ne jamais mettre true en production !
     logging: process.env.NODE_ENV === "development",
-  });
+  };
+
+  AppDataSource = new DataSource(
+    databaseUrl
+      ? { ...commonOptions, url: databaseUrl }
+      : { ...commonOptions, ...getConnectionConfig() }
+  );
 
   await AppDataSource.initialize();
   return AppDataSource;
