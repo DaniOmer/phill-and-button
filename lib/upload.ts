@@ -19,8 +19,8 @@ export const ALLOWED_IMAGE_TYPES: Record<AllowedImageType, string> = {
   "image/webp": "webp",
 };
 
-/** Taille maximale d'une image (5 Mo). */
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+/** Taille maximale d'une image (10 Mo). */
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 /**
  * Renvoie l'extension pour un content-type autorisé, ou null sinon.

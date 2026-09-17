@@ -154,9 +154,9 @@ export default function ProductForm({ product }: ProductFormProps) {
           );
         }
 
-        // Vérifier la taille (5MB max)
+        // Vérifier la taille (10MB max)
         if (file.size > MAX_IMAGE_BYTES) {
-          throw new Error(`${file.name} dépasse 5MB`);
+          throw new Error(`${file.name} dépasse 10MB`);
         }
 
         // Convertir en base64
@@ -410,7 +410,7 @@ export default function ProductForm({ product }: ProductFormProps) {
                         Cliquez pour ajouter des images
                       </span>
                       <span className="text-xs text-gray-400 mt-1">
-                        JPG, PNG ou WebP. Max 5MB par image. Maximum 10 images.
+                        JPG, PNG ou WebP. Max 10MB par image. Maximum 10 images.
                       </span>
                     </>
                   )}

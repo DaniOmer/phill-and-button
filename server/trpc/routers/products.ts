@@ -436,7 +436,7 @@ export const productsRouter = router({
       if (buffer.length > MAX_IMAGE_BYTES) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "L'image dépasse la taille maximale de 5 Mo",
+          message: "L'image dépasse la taille maximale de 10 Mo",
         });
       }
 
