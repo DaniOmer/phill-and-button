@@ -119,8 +119,6 @@ export default function ProductForm({ product }: ProductFormProps) {
       image_urls: imageUrls, // Utiliser l'état local qui contient toutes les images
     };
 
-    console.log("Submitting with images:", imageUrls.length, imageUrls);
-
     if (product) {
       updateMutation.mutate({ id: product.id, ...submitData });
     } else {
@@ -180,9 +178,6 @@ export default function ProductForm({ product }: ProductFormProps) {
       // Utiliser une fonction de mise à jour pour éviter les problèmes de closure
       setImageUrls((currentUrls) => {
         const newImageUrls = [...currentUrls, ...uploadedUrls];
-        console.log("Before update - Current images:", currentUrls.length);
-        console.log("Uploaded images:", uploadedUrls.length);
-        console.log("New total images:", newImageUrls.length);
 
         // Mettre à jour le formulaire avec les nouvelles URLs
         setValue("image_urls", newImageUrls);

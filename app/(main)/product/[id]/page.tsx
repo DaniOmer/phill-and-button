@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageCircle, Package } from "lucide-react";
 import ProductImageCarousel from "@/components/public/product-image-carousel";
 import AddToCartButton from "@/components/public/add-to-cart-button";
+import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types/product";
 
 export const revalidate = 300; // ISR - revalidation toutes les 5 minutes
@@ -31,11 +32,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) {
     notFound();
   }
-
-  // Formater le prix
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR").format(price) + " FCFA";
-  };
 
   // Générer le lien WhatsApp
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";

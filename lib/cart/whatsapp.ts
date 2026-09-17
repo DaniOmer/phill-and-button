@@ -1,15 +1,9 @@
 import type { CartItem } from "./types";
 import { cartTotals } from "./cart-logic";
+import { formatFcfa } from "@/lib/format";
 
-/**
- * Formate un montant en FCFA avec un espace comme séparateur de milliers.
- * Déterministe (indépendant de la version d'ICU), contrairement à Intl.
- */
-export function formatFcfa(amount: number): string {
-  return Math.round(amount)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
+// Re-exporté pour compatibilité : la source unique vit dans lib/format.
+export { formatFcfa };
 
 /**
  * Construit le message de commande (texte brut, non encodé) listant chaque

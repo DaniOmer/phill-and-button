@@ -5,17 +5,13 @@
 import Link from "next/link";
 import type { Product } from "@/types/product";
 import ProductImageCarousel from "@/components/public/product-image-carousel";
+import { formatPrice } from "@/lib/format";
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  // Formater le prix en FCFA
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR").format(price) + " FCFA";
-  };
-
   const imageUrls = product.images?.map((img) => img.url) || [];
 
   return (

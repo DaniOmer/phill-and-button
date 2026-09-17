@@ -63,7 +63,7 @@ export default function CartDrawer() {
                 <li key={item.id} className="flex gap-4 py-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={item.image || "/placeholder.png"}
+                    src={item.image || "/placeholder.svg"}
                     alt={item.name}
                     className="h-20 w-16 shrink-0 rounded object-cover bg-gray-100"
                   />

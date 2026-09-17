@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -58,10 +59,6 @@ export default function AdminProductsPage() {
       toast.error("Erreur lors de la mise à jour");
     },
   });
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR").format(price) + " FCFA";
-  };
 
   if (isLoading) {
     return (

@@ -5,17 +5,11 @@ import { useState } from "react";
 import { ShoppingBag, User, Menu, X } from "lucide-react";
 
 import { Button } from "../ui/button";
-import { SearchBar } from "../searchBar";
 import { useCart } from "@/lib/cart/cart-context";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const { totalItems, openCart } = useCart();
-
-  const handleSearchSubmit = (searchTerm: string) => {
-    // TODO : Implement the logic to get corresponding product from server
-    console.log("Search term ", searchTerm);
-  };
 
   return (
     <header>
