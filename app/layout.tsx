@@ -37,6 +37,7 @@ export const metadata: Metadata = {
 };
 
 import { TRPCProvider } from "@/lib/trpc/provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -49,6 +50,7 @@ export default function RootLayout({
         className={`${amsterdamThree.variable} ${roboto.variable} ${inter.variable} ${lato.variable} antialiased`}
       >
         <TRPCProvider>{children}</TRPCProvider>
+        <Toaster />
       </body>
     </html>
   );

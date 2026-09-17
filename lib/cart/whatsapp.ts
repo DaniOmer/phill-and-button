@@ -1,0 +1,49 @@
+import type { CartItem } from "./types";
+import { cartTotals } from "./cart-logic";
+
+/**
+ * Formate un montant en FCFA avec un espace comme séparateur de milliers.
+ * Déterministe (indépendant de la version d'ICU), contrairement à Intl.
+ */
+export function formatFcfa(amount: number): string {
+  return Math.round(amount)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+/**
+ * Construit le message de commande (texte brut, non encodé) listant chaque
+ * article avec quantité, prix unitaire, sous-total, lien produit, et le total.
+ */
+export function buildOrderMessage(items: CartItem[], origin: string): string {
+  const baseUrl = origin.replace(/\/$/, "");
+
+  const lines = items.map((item, index) => {
+    const lineTotal = item.price * item.quantity;
+    return (
+      `${index + 1}. ${item.name} (x${item.quantity}) — ` +
+      `${formatFcfa(item.price)} FCFA/u → ${formatFcfa(lineTotal)} FCFA\n` +
+      `${baseUrl}/product/${item.id}`
+    );
+  });
+
+  const { totalPrice } = cartTotals(items);
+
+  return (
+    "Bonjour, je souhaite commander :\n\n" +
+    lines.join("\n\n") +
+    `\n\nTotal : ${formatFcfa(totalPrice)} FCFA`
+  );
+}
+
+/**
+ * Construit le lien wa.me avec le message de commande encodé.
+ */
+export function buildWhatsAppUrl(
+  phoneNumber: string,
+  items: CartItem[],
+  origin: string
+): string {
+  const text = encodeURIComponent(buildOrderMessage(items, origin));
+  return `https://wa.me/${phoneNumber}?text=${text}`;
+}

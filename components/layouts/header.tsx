@@ -6,9 +6,11 @@ import { ShoppingBag, User, Menu, X } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { SearchBar } from "../searchBar";
+import { useCart } from "@/lib/cart/cart-context";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const { totalItems, openCart } = useCart();
 
   const handleSearchSubmit = (searchTerm: string) => {
     // TODO : Implement the logic to get corresponding product from server
@@ -40,9 +42,16 @@ const Header = () => {
             <div className="flex gap-4 items-center">
               <Button
                 variant="outline"
-                className="border w-10 h-10 rounded-full"
+                onClick={openCart}
+                aria-label="Ouvrir le panier"
+                className="relative border w-10 h-10 rounded-full"
               >
                 <ShoppingBag size={20} />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
+                    {totalItems}
+                  </span>
+                )}
               </Button>
               <Link
                 href={`/login`}
