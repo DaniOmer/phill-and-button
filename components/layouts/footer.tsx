@@ -21,7 +21,7 @@ const Footer = () => {
           <div className="space-y-4">
             <Link
               href="/"
-              className="text-xl font-amsterdam font-semibold text-white hover:text-gray-300 transition-colors"
+              className="inline-block mb-6 text-sm font-amsterdam font-semibold text-white hover:text-gray-300 transition-colors"
             >
               Phill & Button
             </Link>
