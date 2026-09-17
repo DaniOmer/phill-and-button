@@ -77,23 +77,26 @@ const Header = () => {
         </div>
 
         {/* Mobile menu items */}
-        <div className="relative md:hidden">
-          <div
-            className={`fixed left-0 right-0 top-[4.5rem] transition-transform duration-300 z-40 ${
-              isMenuOpen ? "translate-x-0" : "translate-x-full"
-            }`}
-          >
-            <div className="container mx-auto border-t border-b py-8 px-4 flex md:hidden flex-col justify-center items-center gap-8 bg-background">
-              <ul className="flex md:hidden flex-col justify-center items-center gap-8">
-                <li className="hover:underline">
-                  <Link href={`#`}>Boutique</Link>
-                </li>
-                <li className="hover:underline">
-                  <Link href={`#`}>FAQs</Link>
-                </li>
-              </ul>
-              {/* <SearchBar className="w-full" handleSubmit={handleSearchSubmit} /> */}
-            </div>
+        <div
+          className={`fixed left-0 right-0 top-[4.5rem] z-40 transition-all duration-300 md:hidden ${
+            isMenuOpen
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-2 opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="container mx-auto border-t border-b py-8 px-4 flex flex-col justify-center items-center gap-8 bg-background">
+            <ul className="flex flex-col justify-center items-center gap-8">
+              <li className="hover:underline">
+                <Link href="/store" onClick={() => setIsMenuOpen(false)}>
+                  Boutique
+                </Link>
+              </li>
+              <li className="hover:underline">
+                <Link href="/faq" onClick={() => setIsMenuOpen(false)}>
+                  FAQs
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
       </nav>

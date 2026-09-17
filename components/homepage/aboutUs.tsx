@@ -11,7 +11,8 @@ const AboutUs = () => {
         <Image
           src={images.Phill}
           alt="Our story"
-          className="h-80 object-cover"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="w-full h-80 object-cover"
         />
         <div className="flex flex-col gap-6">
           <div className="flex gap-2 items-center text-sm font-medium">
