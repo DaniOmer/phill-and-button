@@ -14,7 +14,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     "strictPropertyInitialization": false,
     "plugins": [
       {
