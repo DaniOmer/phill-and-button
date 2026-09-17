@@ -8,12 +8,15 @@ const AboutUs = () => {
   return (
     <section className="mt-20">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
-        <Image
-          src={images.Phill}
-          alt="Our story"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="w-full h-80 object-cover"
-        />
+        <div className="relative w-full h-80">
+          <Image
+            src={images.Phill}
+            alt="Notre histoire"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+          />
+        </div>
         <div className="flex flex-col gap-6">
           <div className="flex gap-2 items-center text-sm font-medium">
             <Gem size={16} />
