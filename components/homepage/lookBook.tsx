@@ -39,7 +39,8 @@ export function CarouselPlugin() {
                     alt="Lookbook"
                     width={1920}
                     height={1080}
-                    className="w-full h-auto"
+                    sizes="100vw"
+                    className="w-full h-[400px] object-cover"
                   />
                 </CardContent>
               </Card>
