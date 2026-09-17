@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import images from "@/constants/images";
 import { Button } from "../ui/button";
@@ -18,11 +19,14 @@ const Banner = () => {
             caractère à ton dressing.
           </p>
           <Button
+            asChild
             className="flex items-center gap-10 py-5 rounded-full border-black"
             variant="outline"
           >
-            <span>Voir les nouveautés</span>
-            <MoveRight />
+            <Link href="/store">
+              <span>Voir les nouveautés</span>
+              <MoveRight />
+            </Link>
           </Button>
         </div>
       </div>
