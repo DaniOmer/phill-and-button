@@ -23,6 +23,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             autoPlay={true}
             showControls={true}
             imageClassName="transition-transform duration-300 group-hover:scale-105"
+            alt={product.name}
           />
           {product.is_trending && (
             <span className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded z-20">

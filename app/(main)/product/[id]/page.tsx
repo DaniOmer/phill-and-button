@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { TRPCError } from "@trpc/server";
 import { serverTrpc } from "@/lib/trpc/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +22,40 @@ async function getProduct(id: string): Promise<Product | null> {
     const product = await serverTrpc.products.getById({ id });
     return product;
   } catch (error) {
-    // Si le produit n'existe pas, tRPC lance une erreur NOT_FOUND
-    return null;
+    // Seul un produit réellement introuvable donne un 404 ;
+    // toute autre erreur remonte vers error.tsx.
+    if (error instanceof TRPCError && error.code === "NOT_FOUND") {
+      return null;
+    }
+    throw error;
   }
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
+
+  if (!product) {
+    return { title: "Produit introuvable" };
+  }
+
+  const description =
+    product.description?.slice(0, 160) ||
+    `${product.name} — ${formatPrice(product.price)} chez Phill & Button.`;
+  const image = product.images?.[0]?.url;
+
+  return {
+    title: product.name,
+    description,
+    openGraph: {
+      title: product.name,
+      description,
+      type: "website",
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -61,6 +94,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             autoPlay={false}
             showControls={true}
             className="aspect-[3/4]"
+            alt={product.name}
           />
           {product.is_trending && (
             <Badge className="absolute top-4 left-4 z-20">Tendance</Badge>

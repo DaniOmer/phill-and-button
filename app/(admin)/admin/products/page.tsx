@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { formatPrice } from "@/lib/format";
@@ -28,13 +29,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Star, StarOff, Package } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  StarOff,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
+const PAGE_SIZE = 20;
+
 export default function AdminProductsPage() {
   const utils = trpc.useUtils();
-  const { data: products, isLoading } = trpc.products.getAll.useQuery();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = trpc.products.getAll.useQuery(
+    { page, limit: PAGE_SIZE },
+    { placeholderData: (previousData) => previousData }
+  );
+  const products = data?.items;
+  const totalPages = data?.totalPages ?? 1;
 
   const deleteMutation = trpc.products.delete.useMutation({
     onSuccess: () => {
@@ -203,6 +221,33 @@ export default function AdminProductsPage() {
           <p>Aucun produit pour le moment</p>
           <Button asChild className="mt-4">
             <Link href="/admin/products/new">Créer votre premier produit</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Précédent
+          </Button>
+          <span className="text-sm text-gray-500">
+            Page {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       )}

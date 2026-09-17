@@ -30,6 +30,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CreateCategoryDialog from "@/components/admin/create-category-dialog";
+import {
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  MAX_IMAGE_BYTES,
+  type AllowedImageType,
+} from "@/lib/upload";
 
 interface ProductFormProps {
   product?: Product;
@@ -141,14 +146,16 @@ export default function ProductForm({ product }: ProductFormProps) {
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         // Vérifier le type
-        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        if (
+          !ALLOWED_IMAGE_CONTENT_TYPES.includes(file.type as AllowedImageType)
+        ) {
           throw new Error(
             `Format non supporté pour ${file.name}. Utilisez JPG, PNG ou WebP.`
           );
         }
 
         // Vérifier la taille (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > MAX_IMAGE_BYTES) {
           throw new Error(`${file.name} dépasse 5MB`);
         }
 
@@ -161,7 +168,7 @@ export default function ProductForm({ product }: ProductFormProps) {
               const result = await uploadMutation.mutateAsync({
                 fileName: file.name,
                 fileBase64: base64,
-                contentType: file.type,
+                contentType: file.type as AllowedImageType,
               });
               resolve(result.url);
             } catch (error) {
