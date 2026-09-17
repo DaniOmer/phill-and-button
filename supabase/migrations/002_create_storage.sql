@@ -7,12 +7,12 @@ VALUES (
   'product-images',
   'product-images',
   true,
-  5242880, -- 5MB en bytes
+  10485760, -- 10MB en bytes
   ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO UPDATE SET
   public = true,
-  file_size_limit = 5242880,
+  file_size_limit = 10485760,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp'];
 
 -- Policy pour permettre à tout le monde de voir les images

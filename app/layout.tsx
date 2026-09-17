@@ -31,12 +31,26 @@ const amsterdamThree = localFont({
   variable: "--font-amsterdam",
 });
 
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
+
 export const metadata: Metadata = {
-  title: "Phill & Button",
-  description: "Marque de vêtement haut de gamme.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    locale: "fr_FR",
+  },
 };
 
 import { TRPCProvider } from "@/lib/trpc/provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -49,6 +63,7 @@ export default function RootLayout({
         className={`${amsterdamThree.variable} ${roboto.variable} ${inter.variable} ${lato.variable} antialiased`}
       >
         <TRPCProvider>{children}</TRPCProvider>
+        <Toaster />
       </body>
     </html>
   );

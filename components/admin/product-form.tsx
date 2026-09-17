@@ -30,6 +30,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CreateCategoryDialog from "@/components/admin/create-category-dialog";
+import {
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  MAX_IMAGE_BYTES,
+  type AllowedImageType,
+} from "@/lib/upload";
 
 interface ProductFormProps {
   product?: Product;
@@ -119,8 +124,6 @@ export default function ProductForm({ product }: ProductFormProps) {
       image_urls: imageUrls, // Utiliser l'état local qui contient toutes les images
     };
 
-    console.log("Submitting with images:", imageUrls.length, imageUrls);
-
     if (product) {
       updateMutation.mutate({ id: product.id, ...submitData });
     } else {
@@ -143,15 +146,17 @@ export default function ProductForm({ product }: ProductFormProps) {
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         // Vérifier le type
-        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        if (
+          !ALLOWED_IMAGE_CONTENT_TYPES.includes(file.type as AllowedImageType)
+        ) {
           throw new Error(
             `Format non supporté pour ${file.name}. Utilisez JPG, PNG ou WebP.`
           );
         }
 
-        // Vérifier la taille (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} dépasse 5MB`);
+        // Vérifier la taille (10MB max)
+        if (file.size > MAX_IMAGE_BYTES) {
+          throw new Error(`${file.name} dépasse 10MB`);
         }
 
         // Convertir en base64
@@ -163,7 +168,7 @@ export default function ProductForm({ product }: ProductFormProps) {
               const result = await uploadMutation.mutateAsync({
                 fileName: file.name,
                 fileBase64: base64,
-                contentType: file.type,
+                contentType: file.type as AllowedImageType,
               });
               resolve(result.url);
             } catch (error) {
@@ -180,9 +185,6 @@ export default function ProductForm({ product }: ProductFormProps) {
       // Utiliser une fonction de mise à jour pour éviter les problèmes de closure
       setImageUrls((currentUrls) => {
         const newImageUrls = [...currentUrls, ...uploadedUrls];
-        console.log("Before update - Current images:", currentUrls.length);
-        console.log("Uploaded images:", uploadedUrls.length);
-        console.log("New total images:", newImageUrls.length);
 
         // Mettre à jour le formulaire avec les nouvelles URLs
         setValue("image_urls", newImageUrls);
@@ -408,7 +410,7 @@ export default function ProductForm({ product }: ProductFormProps) {
                         Cliquez pour ajouter des images
                       </span>
                       <span className="text-xs text-gray-400 mt-1">
-                        JPG, PNG ou WebP. Max 5MB par image. Maximum 10 images.
+                        JPG, PNG ou WebP. Max 10MB par image. Maximum 10 images.
                       </span>
                     </>
                   )}

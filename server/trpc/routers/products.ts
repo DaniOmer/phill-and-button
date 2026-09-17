@@ -9,8 +9,14 @@ import { createProductSchema, updateProductSchema } from "@/types/product";
 import { TRPCError } from "@trpc/server";
 import { getProductRepository, getDataSource } from "@/lib/database";
 import { Product, ProductImage } from "@/lib/database/entities";
-import { ILike } from "typeorm";
 import { transformProduct } from "@/lib/database/helpers";
+import { normalizePagination, totalPages } from "@/lib/pagination";
+import {
+  buildImageObjectName,
+  MAX_IMAGE_BYTES,
+  ALLOWED_IMAGE_CONTENT_TYPES,
+} from "@/lib/upload";
+import { randomUUID } from "crypto";
 
 export const productsRouter = router({
   /**
@@ -22,12 +28,15 @@ export const productsRouter = router({
         .object({
           category: z.string().optional(),
           search: z.string().optional(),
+          page: z.number().int().positive().optional(),
+          limit: z.number().int().positive().max(100).optional(),
         })
         .optional()
     )
     .query(async ({ input }) => {
       try {
         const repository = await getProductRepository();
+        const { page, limit, skip } = normalizePagination(input);
 
         const queryBuilder = repository
           .createQueryBuilder("product")
@@ -47,18 +56,25 @@ export const productsRouter = router({
 
         queryBuilder.orderBy("product.created_at", "DESC");
         queryBuilder.addOrderBy("images.order_index", "ASC");
+        // take/skip (et non limit/offset) : déclenche la stratégie de
+        // sous-requête d'IDs distincts de TypeORM, indispensable avec la
+        // jointure one-to-many (images) pour éviter les doublons.
+        queryBuilder.take(limit).skip(skip);
 
-        const products = await queryBuilder.getMany();
+        const [products, total] = await queryBuilder.getManyAndCount();
 
-        return products.map(transformProduct);
+        return {
+          items: products.map(transformProduct),
+          total,
+          page,
+          limit,
+          totalPages: totalPages(total, limit),
+        };
       } catch (error) {
         console.error("Error in getAll:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Erreur lors de la récupération des produits",
+          message: "Erreur lors de la récupération des produits",
         });
       }
     }),
@@ -400,23 +416,37 @@ export const productsRouter = router({
   uploadImage: adminProcedure
     .input(
       z.object({
-        fileName: z.string(),
-        fileBase64: z.string(),
-        contentType: z.string(),
+        // Le nom client est accepté mais ignoré (le nom d'objet est généré).
+        fileName: z.string().optional(),
+        fileBase64: z.string().min(1),
+        contentType: z.enum(ALLOWED_IMAGE_CONTENT_TYPES),
       })
     )
     .mutation(async ({ input }) => {
       const supabase = createServiceRoleClient();
 
-      // Convertir base64 en buffer
+      // Convertir base64 en buffer et valider la taille côté serveur.
       const buffer = Buffer.from(input.fileBase64, "base64");
+      if (buffer.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Fichier vide ou invalide",
+        });
+      }
+      if (buffer.length > MAX_IMAGE_BYTES) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "L'image dépasse la taille maximale de 10 Mo",
+        });
+      }
 
-      // Générer un nom unique
-      const uniqueName = `${Date.now()}-${input.fileName}`;
+      // Nom d'objet généré (UUID + extension déduite du type) : le nom
+      // fourni par le client est ignoré pour éviter toute injection de chemin.
+      const objectName = buildImageObjectName(input.contentType, randomUUID());
 
       const { data, error } = await supabase.storage
         .from("product-images")
-        .upload(uniqueName, buffer, {
+        .upload(objectName, buffer, {
           contentType: input.contentType,
           upsert: false,
         });

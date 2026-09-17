@@ -30,7 +30,12 @@ export const serverTrpc = {
       const caller = await createServerTRPC();
       return caller.products.getStats();
     },
-    getAll: async (input?: { category?: string; search?: string }) => {
+    getAll: async (input?: {
+      category?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }) => {
       const caller = await createServerTRPC();
       return caller.products.getAll(input);
     },

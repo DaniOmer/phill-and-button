@@ -10,7 +10,7 @@ async function getStats() {
   try {
     return await serverTrpc.products.getStats();
   } catch (error) {
-    console.log("error", error);
+    console.error("Échec du chargement des statistiques admin", error);
     return {
       totalProducts: 0,
       trendingProducts: 0,

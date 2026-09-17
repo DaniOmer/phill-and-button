@@ -14,6 +14,7 @@ interface ProductImageCarouselProps {
   showControls?: boolean;
   className?: string;
   imageClassName?: string;
+  alt?: string;
 }
 
 export default function ProductImageCarousel({
@@ -22,6 +23,7 @@ export default function ProductImageCarousel({
   showControls = true,
   className,
   imageClassName,
+  alt = "Produit",
 }: ProductImageCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -95,7 +97,7 @@ export default function ProductImageCarousel({
       >
         <Image
           src={images[0]}
-          alt="Product"
+          alt={alt}
           fill
           className={cn("object-cover", imageClassName)}
           sizes="(max-width: 768px) 100vw, 50vw"
@@ -115,7 +117,7 @@ export default function ProductImageCarousel({
             >
               <Image
                 src={url}
-                alt={`Product image ${index + 1}`}
+                alt={`${alt} — image ${index + 1}`}
                 fill
                 className={cn("object-cover", imageClassName)}
                 sizes="(max-width: 768px) 100vw, 50vw"

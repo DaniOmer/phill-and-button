@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { TRPCError } from "@trpc/server";
 import { serverTrpc } from "@/lib/trpc/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageCircle, Package } from "lucide-react";
 import ProductImageCarousel from "@/components/public/product-image-carousel";
+import AddToCartButton from "@/components/public/add-to-cart-button";
+import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types/product";
 
 export const revalidate = 300; // ISR - revalidation toutes les 5 minutes
@@ -18,9 +22,40 @@ async function getProduct(id: string): Promise<Product | null> {
     const product = await serverTrpc.products.getById({ id });
     return product;
   } catch (error) {
-    // Si le produit n'existe pas, tRPC lance une erreur NOT_FOUND
-    return null;
+    // Seul un produit réellement introuvable donne un 404 ;
+    // toute autre erreur remonte vers error.tsx.
+    if (error instanceof TRPCError && error.code === "NOT_FOUND") {
+      return null;
+    }
+    throw error;
   }
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
+
+  if (!product) {
+    return { title: "Produit introuvable" };
+  }
+
+  const description =
+    product.description?.slice(0, 160) ||
+    `${product.name} — ${formatPrice(product.price)} chez Phill & Button.`;
+  const image = product.images?.[0]?.url;
+
+  return {
+    title: product.name,
+    description,
+    openGraph: {
+      title: product.name,
+      description,
+      type: "website",
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -30,11 +65,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) {
     notFound();
   }
-
-  // Formater le prix
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR").format(price) + " FCFA";
-  };
 
   // Générer le lien WhatsApp
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
@@ -64,6 +94,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             autoPlay={false}
             showControls={true}
             className="aspect-[3/4]"
+            alt={product.name}
           />
           {product.is_trending && (
             <Badge className="absolute top-4 left-4 z-20">Tendance</Badge>
@@ -98,37 +129,41 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
 
-          {/* Bouton WhatsApp */}
-          {product.stock > 0 ? (
-            <Button
-              asChild
-              size="lg"
-              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
-            >
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2"
+          {/* Actions : ajout au panier + commande directe WhatsApp */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <AddToCartButton
+              product={{
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0]?.url ?? null,
+                stock: product.stock,
+              }}
+              className="w-full sm:w-auto"
+            />
+            {product.stock > 0 && (
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto border-green-600 text-green-700 hover:bg-green-50"
               >
-                <MessageCircle className="h-5 w-5" />
-                Commander via WhatsApp
-              </a>
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className="w-full sm:w-auto bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
-              disabled
-            >
-              <MessageCircle className="h-5 w-5 mr-2" />
-              Indisponible
-            </Button>
-          )}
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  Commander via WhatsApp
+                </a>
+              </Button>
+            )}
+          </div>
 
           <p className="text-sm text-gray-500">
             {product.stock > 0
-              ? "Cliquez pour ouvrir WhatsApp avec un message pré-rempli"
+              ? "Ajoutez au panier ou commandez directement ce produit via WhatsApp"
               : "Ce produit est actuellement en rupture de stock"}
           </p>
         </div>

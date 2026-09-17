@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 import ProductGrid from "@/components/public/product-grid";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,12 +12,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 12;
 
 export default function StoreContent() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -26,15 +30,26 @@ export default function StoreContent() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: products, isFetching } = trpc.products.getAll.useQuery(
+  // Revenir à la première page quand la recherche ou la catégorie change.
+  useEffect(() => {
+    setPage(1);
+  }, [search, category]);
+
+  const { data, isFetching } = trpc.products.getAll.useQuery(
     {
       search: search || undefined,
       category: category === "all" ? undefined : category,
+      page,
+      limit: PAGE_SIZE,
     },
     {
       placeholderData: (previousData) => previousData,
     }
   );
+
+  const products = data?.items;
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const { data: categories } = trpc.products.getCategories.useQuery();
 
@@ -69,7 +84,7 @@ export default function StoreContent() {
 
       {/* Nombre de résultats */}
       <p className="text-sm text-gray-500">
-        {products?.length ?? 0} produit(s) trouvé(s)
+        {total} produit(s) trouvé(s)
         {isFetching && search && (
           <span className="ml-2 text-gray-400">(recherche en cours...)</span>
         )}
@@ -88,6 +103,33 @@ export default function StoreContent() {
         </div>
       ) : (
         <ProductGrid products={products ?? []} />
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || isFetching}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Précédent
+          </Button>
+          <span className="text-sm text-gray-500">
+            Page {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || isFetching}
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
       )}
     </div>
   );

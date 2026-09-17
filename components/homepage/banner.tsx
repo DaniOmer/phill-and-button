@@ -28,8 +28,10 @@ const Banner = () => {
       <div>
         <Image
           src={images.Banner}
-          alt="Good looking man wearing a suit"
-          className="h-[400px] object-cover"
+          alt="Phill & Button — nouvelle collection"
+          priority
+          sizes="100vw"
+          className="w-full h-[400px] object-cover"
         />
       </div>
     </section>

@@ -35,6 +35,7 @@ cp .env.example .env.local
    - `NEXT_PUBLIC_SUPABASE_URL` - URL du projet
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Clé anonyme
    - `SUPABASE_SERVICE_ROLE_KEY` - Clé service role (admin)
+   - `SUPABASE_DB_PASSWORD` - Mot de passe de la base de données
    - `NEXT_PUBLIC_WHATSAPP_NUMBER` - Numéro WhatsApp Business
 
 ### 3. Exécuter les migrations SQL
@@ -115,6 +116,7 @@ npm run lint     # Linter ESLint
 | `NEXT_PUBLIC_SUPABASE_URL`      | URL du projet Supabase                 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé publique Supabase                  |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Clé admin Supabase (ne pas exposer)    |
+| `SUPABASE_DB_PASSWORD`          | Mot de passe de la base de données     |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER`   | Numéro WhatsApp (format: 221771234567) |
 
 ## Déploiement
