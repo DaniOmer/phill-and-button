@@ -8,8 +8,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import type { ProductImage } from "./ProductImage";
-import type { ProductCategory } from "./ProductCategory";
+import { ProductImage } from "./ProductImage";
+import { ProductCategory } from "./ProductCategory";
 
 @Entity("products")
 export class Product {
@@ -34,14 +34,14 @@ export class Product {
   @Column({ type: "uuid", nullable: true })
   category_id: string | null;
 
-  @ManyToOne("ProductCategory", {
+  @ManyToOne(() => ProductCategory, {
     nullable: true,
     eager: false,
   })
   @JoinColumn({ name: "category_id" })
   category: ProductCategory | null;
 
-  @OneToMany("ProductImage", "product", {
+  @OneToMany(() => ProductImage, (image) => image.product, {
     cascade: true,
     eager: false,
   })
