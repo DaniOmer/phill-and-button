@@ -60,7 +60,7 @@ export default function CartDrawer() {
           <>
             <ul className="flex-1 divide-y overflow-y-auto">
               {items.map((item) => (
-                <li key={item.id} className="flex gap-4 py-4">
+                <li key={`${item.id}-${item.size}`} className="flex gap-4 py-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.image || "/placeholder.svg"}
@@ -74,12 +74,20 @@ export default function CartDrawer() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => removeItem(item.id)}
-                        aria-label={`Retirer ${item.name}`}
+                        onClick={() => removeItem(item.id, item.size)}
+                        aria-label={`Retirer ${item.name} (taille ${item.size})`}
                         className="text-gray-400 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>Taille {item.size}</span>
+                      {item.onOrder && (
+                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                          Sur commande
+                        </span>
+                      )}
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {formatFcfa(item.price)} FCFA/u
@@ -91,7 +99,7 @@ export default function CartDrawer() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
+                            updateQuantity(item.id, item.size, item.quantity - 1)
                           }
                           disabled={item.quantity <= 1}
                           aria-label="Diminuer la quantité"
@@ -106,9 +114,9 @@ export default function CartDrawer() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
+                            updateQuantity(item.id, item.size, item.quantity + 1)
                           }
-                          disabled={item.quantity >= item.stock}
+                          disabled={!item.onOrder && item.quantity >= item.stock}
                           aria-label="Augmenter la quantité"
                         >
                           <Plus className="h-3 w-3" />

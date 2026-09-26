@@ -5,6 +5,7 @@
 import type { Product as ProductEntity } from "./entities/Product";
 import type { ProductImage as ProductImageEntity } from "./entities/ProductImage";
 import type { Product, ProductImage } from "@/types/product";
+import { sortSizes } from "@/lib/sizes";
 
 /**
  * Transforme une entité ProductImage TypeORM en format API
@@ -31,6 +32,12 @@ export function transformProduct(product: ProductEntity): Product {
     .sort((a, b) => a.order_index - b.order_index)
     .map((img) => transformProductImage(img, product.id));
 
+  // Tailles triées (XS→3XL) et stock total calculé comme leur somme.
+  const sizes = sortSizes(
+    (product.sizes || []).map((s) => ({ size: s.size, stock: s.stock }))
+  );
+  const stock = sizes.reduce((sum, s) => sum + s.stock, 0);
+
   return {
     id: product.id,
     name: product.name,
@@ -38,7 +45,9 @@ export function transformProduct(product: ProductEntity): Product {
     price: Number(product.price),
     images: sortedImages,
     is_trending: product.is_trending,
-    stock: product.stock,
+    available_on_order: product.available_on_order,
+    sizes,
+    stock,
     category: product.category?.name ?? null,
     created_at: product.created_at.toISOString(),
     updated_at: product.updated_at.toISOString(),

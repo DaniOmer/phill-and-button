@@ -7,7 +7,9 @@ const item = (overrides: Partial<CartItem> = {}): CartItem => ({
   name: "Chemise en lin",
   price: 25000,
   image: null,
+  size: "M",
   stock: 5,
+  onOrder: false,
   quantity: 1,
   ...overrides,
 });
@@ -21,22 +23,30 @@ describe("formatFcfa", () => {
 });
 
 describe("buildOrderMessage", () => {
-  it("lists each item with quantity, unit price, line total and product link", () => {
+  it("lists each item with size, quantity, prices and product link", () => {
     const items = [
-      item({ id: "p1", name: "Chemise en lin", price: 25000, quantity: 2 }),
-      item({ id: "p2", name: "Pantalon chino", price: 30000, quantity: 1 }),
+      item({ id: "p1", name: "Chemise en lin", size: "M", price: 25000, quantity: 2 }),
+      item({ id: "p2", name: "Pantalon chino", size: "L", price: 30000, quantity: 1 }),
     ];
 
     const message = buildOrderMessage(items, "https://shop.test");
 
     expect(message).toBe(
       "Bonjour, je souhaite commander :\n\n" +
-        "1. Chemise en lin (x2) — 25 000 FCFA/u → 50 000 FCFA\n" +
+        "1. Chemise en lin — Taille M (x2) — 25 000 FCFA/u → 50 000 FCFA\n" +
         "https://shop.test/product/p1\n\n" +
-        "2. Pantalon chino (x1) — 30 000 FCFA/u → 30 000 FCFA\n" +
+        "2. Pantalon chino — Taille L (x1) — 30 000 FCFA/u → 30 000 FCFA\n" +
         "https://shop.test/product/p2\n\n" +
         "Total : 80 000 FCFA"
     );
+  });
+
+  it("marks on-order lines", () => {
+    const message = buildOrderMessage(
+      [item({ size: "XL", onOrder: true, quantity: 1 })],
+      "https://shop.test"
+    );
+    expect(message).toContain("Taille XL (sur commande) (x1)");
   });
 
   it("strips a trailing slash from the origin", () => {

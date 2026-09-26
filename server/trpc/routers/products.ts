@@ -8,7 +8,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createProductSchema, updateProductSchema } from "@/types/product";
 import { TRPCError } from "@trpc/server";
 import { getProductRepository, getDataSource } from "@/lib/database";
-import { Product, ProductImage } from "@/lib/database/entities";
+import { Product, ProductImage, ProductSize } from "@/lib/database/entities";
 import { transformProduct } from "@/lib/database/helpers";
 import { normalizePagination, totalPages } from "@/lib/pagination";
 import {
@@ -41,6 +41,7 @@ export const productsRouter = router({
         const queryBuilder = repository
           .createQueryBuilder("product")
           .leftJoinAndSelect("product.images", "images")
+          .leftJoinAndSelect("product.sizes", "sizes")
           .leftJoinAndSelect("product.category", "category");
 
         if (input?.category) {
@@ -88,7 +89,7 @@ export const productsRouter = router({
 
       const products = await repository.find({
         where: { is_trending: true },
-        relations: ["images", "category"],
+        relations: ["images", "sizes", "category"],
         order: {
           created_at: "DESC",
           images: {
@@ -119,7 +120,7 @@ export const productsRouter = router({
 
         const product = await repository.findOne({
           where: { id: input.id },
-          relations: ["images", "category"],
+          relations: ["images", "sizes", "category"],
           order: {
             images: {
               order_index: "ASC",
@@ -179,7 +180,7 @@ export const productsRouter = router({
     .mutation(async ({ input }) => {
       try {
         const repository = await getProductRepository();
-        const { image_urls = [], ...productData } = input;
+        const { image_urls = [], sizes = [], ...productData } = input;
 
         // Créer les images si fournies
         const images =
@@ -192,19 +193,28 @@ export const productsRouter = router({
               )
             : [];
 
-        // Créer le produit avec les images
+        // Créer les tailles si fournies
+        const sizeEntities = sizes.map((s) =>
+          repository.manager.create(ProductSize, {
+            size: s.size,
+            stock: s.stock,
+          })
+        );
+
+        // Créer le produit avec ses images et ses tailles
         const product = repository.create({
           ...productData,
           images,
+          sizes: sizeEntities,
         });
 
-        // Sauvegarder (la cascade créera automatiquement les images)
+        // Sauvegarder (la cascade crée automatiquement images et tailles)
         const savedProduct = await repository.save(product);
 
         // Recharger avec les relations pour avoir toutes les données
         const productWithImages = await repository.findOne({
           where: { id: savedProduct.id },
-          relations: ["images", "category"],
+          relations: ["images", "sizes", "category"],
           order: {
             images: {
               order_index: "ASC",
@@ -241,7 +251,8 @@ export const productsRouter = router({
         const repository = await getProductRepository();
         const dataSource = await getDataSource();
         const imageRepository = dataSource.getRepository(ProductImage);
-        const { id, image_urls, ...updateData } = input;
+        const sizeRepository = dataSource.getRepository(ProductSize);
+        const { id, image_urls, sizes, ...updateData } = input;
 
         // Vérifier que le produit existe
         const existingProduct = await repository.findOne({
@@ -255,15 +266,14 @@ export const productsRouter = router({
           });
         }
 
-        // Mettre à jour le produit
-        await repository.update(id, updateData);
+        // Mettre à jour les champs du produit (si fournis)
+        if (Object.keys(updateData).length > 0) {
+          await repository.update(id, updateData);
+        }
 
-        // Si image_urls est fourni, mettre à jour les images
+        // Si image_urls est fourni, remplacer les images
         if (image_urls !== undefined) {
-          // Supprimer toutes les images existantes
           await imageRepository.delete({ product_id: id });
-
-          // Créer les nouvelles images si fournies
           if (image_urls.length > 0) {
             const imagesToInsert = image_urls.map((url, index) =>
               imageRepository.create({
@@ -276,10 +286,25 @@ export const productsRouter = router({
           }
         }
 
-        // Recharger le produit avec ses images
+        // Si sizes est fourni, remplacer les tailles
+        if (sizes !== undefined) {
+          await sizeRepository.delete({ product_id: id });
+          if (sizes.length > 0) {
+            const sizesToInsert = sizes.map((s) =>
+              sizeRepository.create({
+                product_id: id,
+                size: s.size,
+                stock: s.stock,
+              })
+            );
+            await sizeRepository.save(sizesToInsert);
+          }
+        }
+
+        // Recharger le produit avec ses relations
         const productWithImages = await repository.findOne({
           where: { id },
-          relations: ["images", "category"],
+          relations: ["images", "sizes", "category"],
           order: {
             images: {
               order_index: "ASC",
@@ -393,10 +418,16 @@ export const productsRouter = router({
         where: { is_trending: true },
       });
 
-      // Compter les produits en rupture de stock
-      const outOfStock = await repository.count({
-        where: { stock: 0 },
-      });
+      // Compter les produits en rupture (stock total, toutes tailles, = 0)
+      const outOfStockResult = await repository.query(
+        `SELECT COUNT(*)::int AS count
+         FROM products p
+         WHERE COALESCE(
+           (SELECT SUM(s.stock) FROM product_sizes s WHERE s.product_id = p.id),
+           0
+         ) = 0`
+      );
+      const outOfStock = outOfStockResult[0]?.count ?? 0;
 
       return {
         totalProducts,

@@ -12,7 +12,9 @@ const product = (overrides: Partial<CartProduct> = {}): CartProduct => ({
   name: "Chemise en lin",
   price: 25000,
   image: "https://img/1.jpg",
+  size: "M",
   stock: 5,
+  onOrder: false,
   ...overrides,
 });
 
@@ -21,75 +23,112 @@ const item = (overrides: Partial<CartItem> = {}): CartItem => ({
   name: "Chemise en lin",
   price: 25000,
   image: "https://img/1.jpg",
+  size: "M",
   stock: 5,
+  onOrder: false,
   quantity: 1,
   ...overrides,
 });
 
 describe("addItem", () => {
-  it("adds a new product with the requested quantity", () => {
+  it("adds a new product/size with the requested quantity", () => {
     const result = addItem([], product(), 2);
     expect(result).toEqual([item({ quantity: 2 })]);
   });
 
-  it("increments quantity when the product is already in the cart", () => {
+  it("increments quantity when the same product AND size is already present", () => {
     const result = addItem([item({ quantity: 2 })], product(), 1);
     expect(result).toEqual([item({ quantity: 3 })]);
   });
 
-  it("caps the quantity at the available stock", () => {
-    const result = addItem([item({ quantity: 4, stock: 5 })], product({ stock: 5 }), 10);
+  it("keeps different sizes of the same product as separate lines", () => {
+    const result = addItem(
+      [item({ size: "M", quantity: 1 })],
+      product({ size: "L" }),
+      1
+    );
+    expect(result).toHaveLength(2);
+    expect(result.map((i) => i.size).sort()).toEqual(["L", "M"]);
+  });
+
+  it("caps the quantity at the size stock for in-stock lines", () => {
+    const result = addItem(
+      [item({ quantity: 4, stock: 5 })],
+      product({ stock: 5 }),
+      10
+    );
     expect(result[0].quantity).toBe(5);
   });
 
-  it("does not add a product that is out of stock", () => {
-    const result = addItem([], product({ stock: 0 }), 1);
+  it("does not add an out-of-stock size that is not orderable", () => {
+    const result = addItem([], product({ stock: 0, onOrder: false }), 1);
     expect(result).toEqual([]);
   });
 
-  it("does not mutate the original array", () => {
-    const original = [item({ quantity: 1 })];
-    addItem(original, product(), 1);
-    expect(original[0].quantity).toBe(1);
+  it("adds an out-of-stock size when the product is available on order (no cap)", () => {
+    const result = addItem([], product({ stock: 0, onOrder: true }), 3);
+    expect(result).toEqual([item({ stock: 0, onOrder: true, quantity: 3 })]);
+  });
+
+  it("does not cap on-order lines at stock", () => {
+    const result = addItem(
+      [item({ stock: 0, onOrder: true, quantity: 2 })],
+      product({ stock: 0, onOrder: true }),
+      5
+    );
+    expect(result[0].quantity).toBe(7);
   });
 });
 
 describe("updateQuantity", () => {
-  it("sets the quantity for an existing item", () => {
-    const result = updateQuantity([item({ quantity: 1 })], "p1", 3);
+  it("sets the quantity for a matching (id, size) line", () => {
+    const result = updateQuantity([item({ quantity: 1 })], "p1", "M", 3);
     expect(result[0].quantity).toBe(3);
   });
 
-  it("caps the quantity at the available stock", () => {
-    const result = updateQuantity([item({ quantity: 1, stock: 5 })], "p1", 99);
+  it("caps at the size stock for in-stock lines", () => {
+    const result = updateQuantity([item({ quantity: 1, stock: 5 })], "p1", "M", 99);
     expect(result[0].quantity).toBe(5);
   });
 
-  it("clamps quantity to a minimum of 1", () => {
-    const result = updateQuantity([item({ quantity: 3 })], "p1", 0);
+  it("does not cap on-order lines", () => {
+    const result = updateQuantity(
+      [item({ stock: 0, onOrder: true, quantity: 1 })],
+      "p1",
+      "M",
+      50
+    );
+    expect(result[0].quantity).toBe(50);
+  });
+
+  it("clamps to a minimum of 1", () => {
+    const result = updateQuantity([item({ quantity: 3 })], "p1", "M", 0);
     expect(result[0].quantity).toBe(1);
   });
 
-  it("leaves other items untouched", () => {
-    const items = [item({ id: "p1", quantity: 1 }), item({ id: "p2", quantity: 2 })];
-    const result = updateQuantity(items, "p1", 4);
-    expect(result.find((i) => i.id === "p2")?.quantity).toBe(2);
+  it("only affects the matching size", () => {
+    const items = [
+      item({ size: "M", quantity: 1 }),
+      item({ size: "L", quantity: 2 }),
+    ];
+    const result = updateQuantity(items, "p1", "M", 4);
+    expect(result.find((i) => i.size === "L")?.quantity).toBe(2);
   });
 });
 
 describe("removeItem", () => {
-  it("removes the matching item", () => {
-    const items = [item({ id: "p1" }), item({ id: "p2" })];
-    const result = removeItem(items, "p1");
-    expect(result).toEqual([item({ id: "p2" })]);
+  it("removes only the matching (id, size) line", () => {
+    const items = [item({ size: "M" }), item({ size: "L" })];
+    const result = removeItem(items, "p1", "M");
+    expect(result).toEqual([item({ size: "L" })]);
   });
 });
 
 describe("cartTotals", () => {
   it("computes total item count and total price", () => {
     const items = [
-      item({ id: "p1", price: 25000, quantity: 2 }),
-      item({ id: "p2", price: 30000, quantity: 1 }),
+      item({ size: "M", price: 25000, quantity: 2 }),
+      item({ size: "L", price: 30000, quantity: 1 }),
     ];
     expect(cartTotals(items)).toEqual({ totalItems: 3, totalPrice: 80000 });
   });

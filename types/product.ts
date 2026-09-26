@@ -1,4 +1,16 @@
 import { z } from "zod";
+import { SIZE_ORDER } from "@/lib/sizes";
+
+/**
+ * Schéma d'une taille avec son stock.
+ */
+export const sizeStockSchema = z.object({
+  size: z.enum(SIZE_ORDER),
+  stock: z
+    .number()
+    .int()
+    .nonnegative("Le stock doit être positif ou nul"),
+});
 
 /**
  * Schéma Zod pour la validation des produits (API)
@@ -15,11 +27,8 @@ export const productSchema = z.object({
     .max(10, "Maximum 10 images par produit")
     .default([]),
   is_trending: z.boolean().default(false),
-  stock: z
-    .number()
-    .int()
-    .nonnegative("Le stock doit être positif ou nul")
-    .default(0),
+  available_on_order: z.boolean().default(false),
+  sizes: z.array(sizeStockSchema).default([]),
   category_id: z.string().uuid().optional().nullable(),
 });
 
@@ -37,7 +46,8 @@ export const productFormSchema = z.object({
     .array(z.string().url("URL invalide"))
     .max(10, "Maximum 10 images par produit"),
   is_trending: z.boolean(),
-  stock: z.number().int().nonnegative("Le stock doit être positif ou nul"),
+  available_on_order: z.boolean(),
+  sizes: z.array(sizeStockSchema),
   category_id: z.string().uuid().optional().nullable(),
 });
 
@@ -67,6 +77,14 @@ export interface ProductImage {
 }
 
 /**
+ * Stock d'une taille donnée pour un produit.
+ */
+export interface ProductSizeStock {
+  size: string;
+  stock: number;
+}
+
+/**
  * Type complet du produit (avec id et timestamps)
  */
 export interface Product {
@@ -76,6 +94,9 @@ export interface Product {
   price: number;
   images: ProductImage[];
   is_trending: boolean;
+  available_on_order: boolean;
+  sizes: ProductSizeStock[];
+  /** Stock total, calculé comme la somme des stocks par taille. */
   stock: number;
   category: string | null;
   created_at: string;

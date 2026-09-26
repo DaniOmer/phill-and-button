@@ -14,8 +14,9 @@ export function buildOrderMessage(items: CartItem[], origin: string): string {
 
   const lines = items.map((item, index) => {
     const lineTotal = item.price * item.quantity;
+    const onOrder = item.onOrder ? " (sur commande)" : "";
     return (
-      `${index + 1}. ${item.name} (x${item.quantity}) — ` +
+      `${index + 1}. ${item.name} — Taille ${item.size}${onOrder} (x${item.quantity}) — ` +
       `${formatFcfa(item.price)} FCFA/u → ${formatFcfa(lineTotal)} FCFA\n` +
       `${baseUrl}/product/${item.id}`
     );

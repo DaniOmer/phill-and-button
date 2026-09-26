@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { ProductImage } from "./ProductImage";
 import { ProductCategory } from "./ProductCategory";
+import { ProductSize } from "./ProductSize";
 
 @Entity("products")
 export class Product {
@@ -28,8 +29,8 @@ export class Product {
   @Column({ type: "boolean", default: false })
   is_trending: boolean;
 
-  @Column({ type: "integer", default: 0 })
-  stock: number;
+  @Column({ type: "boolean", default: false })
+  available_on_order: boolean;
 
   @Column({ type: "uuid", nullable: true })
   category_id: string | null;
@@ -46,6 +47,12 @@ export class Product {
     eager: false,
   })
   images: ProductImage[];
+
+  @OneToMany(() => ProductSize, (size) => size.product, {
+    cascade: true,
+    eager: false,
+  })
+  sizes: ProductSize[];
 
   @CreateDateColumn({ type: "timestamptz" })
   created_at: Date;

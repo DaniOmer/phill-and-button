@@ -35,6 +35,7 @@ import {
   MAX_IMAGE_BYTES,
   type AllowedImageType,
 } from "@/lib/upload";
+import { SIZE_ORDER } from "@/lib/sizes";
 
 interface ProductFormProps {
   product?: Product;
@@ -45,6 +46,14 @@ export default function ProductForm({ product }: ProductFormProps) {
   const [imageUrls, setImageUrls] = useState<string[]>(
     product?.images?.map((img) => img.url) || []
   );
+  // Stock par taille : une clé présente = taille proposée.
+  const [sizeStocks, setSizeStocks] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    product?.sizes?.forEach((s) => {
+      initial[s.size] = s.stock;
+    });
+    return initial;
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [createCategoryDialogOpen, setCreateCategoryDialogOpen] =
     useState(false);
@@ -66,7 +75,8 @@ export default function ProductForm({ product }: ProductFormProps) {
       price: product?.price ?? 0,
       image_urls: product?.images?.map((img) => img.url) || [],
       is_trending: product?.is_trending ?? false,
-      stock: product?.stock ?? 0,
+      available_on_order: product?.available_on_order ?? false,
+      sizes: (product?.sizes ?? []) as ProductFormInput["sizes"],
       category_id: null, // Sera mis à jour dans useEffect
     },
   });
@@ -94,6 +104,34 @@ export default function ProductForm({ product }: ProductFormProps) {
       setValue("image_urls", urls);
     }
   }, [product, setValue]);
+
+  // Synchroniser les tailles (ordre canonique) vers le champ du formulaire
+  useEffect(() => {
+    const sizes = SIZE_ORDER.filter((s) => s in sizeStocks).map((s) => ({
+      size: s,
+      stock: sizeStocks[s],
+    }));
+    setValue("sizes", sizes, { shouldValidate: true });
+  }, [sizeStocks, setValue]);
+
+  const toggleSize = (size: string) => {
+    setSizeStocks((current) => {
+      const next = { ...current };
+      if (size in next) {
+        delete next[size];
+      } else {
+        next[size] = 0;
+      }
+      return next;
+    });
+  };
+
+  const setSizeStock = (size: string, stock: number) => {
+    setSizeStocks((current) => ({
+      ...current,
+      [size]: Number.isFinite(stock) && stock >= 0 ? stock : 0,
+    }));
+  };
 
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
@@ -267,32 +305,81 @@ export default function ProductForm({ product }: ProductFormProps) {
             )}
           </div>
 
-          {/* Prix et Stock */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Prix */}
+          <div className="space-y-2">
+            <Label htmlFor="price">Prix (FCFA) *</Label>
+            <Input
+              id="price"
+              type="number"
+              {...register("price", { valueAsNumber: true })}
+              placeholder="25000"
+              className="max-w-xs"
+            />
+            {errors.price && (
+              <p className="text-sm text-red-600">{errors.price.message}</p>
+            )}
+          </div>
+
+          {/* Tailles & stock */}
+          <div className="space-y-3">
+            <Label>Tailles &amp; stock</Label>
             <div className="space-y-2">
-              <Label htmlFor="price">Prix (FCFA) *</Label>
-              <Input
-                id="price"
-                type="number"
-                {...register("price", { valueAsNumber: true })}
-                placeholder="25000"
-              />
-              {errors.price && (
-                <p className="text-sm text-red-600">{errors.price.message}</p>
-              )}
+              {SIZE_ORDER.map((size) => {
+                const enabled = size in sizeStocks;
+                return (
+                  <div key={size} className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSize(size)}
+                      aria-pressed={enabled}
+                      className={`w-14 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                        enabled
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "text-gray-600 hover:border-primary"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                    {enabled ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={sizeStocks[size]}
+                          onChange={(e) =>
+                            setSizeStock(size, e.target.valueAsNumber)
+                          }
+                          className="w-28"
+                          placeholder="Stock"
+                        />
+                        <span className="text-sm text-gray-500">en stock</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400">Non proposée</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                type="number"
-                {...register("stock", { valueAsNumber: true })}
-                placeholder="10"
-              />
-              {errors.stock && (
-                <p className="text-sm text-red-600">{errors.stock.message}</p>
-              )}
-            </div>
+            {errors.sizes && (
+              <p className="text-sm text-red-600">
+                {errors.sizes.message as string}
+              </p>
+            )}
+          </div>
+
+          {/* Disponible sur commande */}
+          <div className="flex items-center gap-2">
+            <input
+              id="available_on_order"
+              type="checkbox"
+              {...register("available_on_order")}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="available_on_order" className="cursor-pointer">
+              Disponible sur commande (les tailles en rupture restent
+              commandables)
+            </Label>
           </div>
 
           {/* Catégorie */}

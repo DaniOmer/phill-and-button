@@ -4,10 +4,9 @@ import Link from "next/link";
 import { TRPCError } from "@trpc/server";
 import { serverTrpc } from "@/lib/trpc/server";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageCircle, Package } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import ProductImageCarousel from "@/components/public/product-image-carousel";
-import AddToCartButton from "@/components/public/add-to-cart-button";
+import ProductPurchase from "@/components/public/product-purchase";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types/product";
 
@@ -66,15 +65,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  // Générer le lien WhatsApp
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
-  const whatsappMessage = encodeURIComponent(
-    `Bonjour, je suis intéressé(e) par ${product.name} au prix de ${formatPrice(
-      product.price
-    )}`
-  );
-  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Retour */}
@@ -119,53 +109,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           )}
 
-          {/* Stock */}
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-gray-500" />
-            {product.stock > 0 ? (
-              <span className="text-green-600">{product.stock} en stock</span>
-            ) : (
-              <span className="text-red-600">Rupture de stock</span>
-            )}
-          </div>
-
-          {/* Actions : ajout au panier + commande directe WhatsApp */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <AddToCartButton
-              product={{
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images?.[0]?.url ?? null,
-                stock: product.stock,
-              }}
-              className="w-full sm:w-auto"
-            />
-            {product.stock > 0 && (
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto border-green-600 text-green-700 hover:bg-green-50"
-              >
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  Commander via WhatsApp
-                </a>
-              </Button>
-            )}
-          </div>
-
-          <p className="text-sm text-gray-500">
-            {product.stock > 0
-              ? "Ajoutez au panier ou commandez directement ce produit via WhatsApp"
-              : "Ce produit est actuellement en rupture de stock"}
-          </p>
+          {/* Tailles, disponibilité, ajout au panier & commande WhatsApp */}
+          <ProductPurchase
+            product={{
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.images?.[0]?.url ?? null,
+              sizes: product.sizes,
+              availableOnOrder: product.available_on_order,
+            }}
+          />
         </div>
       </div>
     </div>

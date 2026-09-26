@@ -24,8 +24,8 @@ interface CartContextValue {
   totalPrice: number;
   isOpen: boolean;
   addItem: (product: CartProduct, quantity?: number) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  removeItem: (id: string) => void;
+  updateQuantity: (id: string, size: string, quantity: number) => void;
+  removeItem: (id: string, size: string) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -68,12 +68,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((current) => addItemLogic(current, product, quantity));
   }, []);
 
-  const updateQuantity = useCallback((id: string, quantity: number) => {
-    setItems((current) => updateQuantityLogic(current, id, quantity));
-  }, []);
+  const updateQuantity = useCallback(
+    (id: string, size: string, quantity: number) => {
+      setItems((current) => updateQuantityLogic(current, id, size, quantity));
+    },
+    []
+  );
 
-  const removeItem = useCallback((id: string) => {
-    setItems((current) => removeItemLogic(current, id));
+  const removeItem = useCallback((id: string, size: string) => {
+    setItems((current) => removeItemLogic(current, id, size));
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);

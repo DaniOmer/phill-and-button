@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { join } from "path";
 import { Product } from "./entities/Product";
 import { ProductImage } from "./entities/ProductImage";
+import { ProductSize } from "./entities/ProductSize";
 import { ProductCategory } from "./entities/ProductCategory";
 import { Profile } from "./entities/Profile";
 
@@ -46,7 +47,7 @@ export async function getDataSource(): Promise<DataSource> {
     ssl: {
       rejectUnauthorized: false,
     },
-    entities: [Product, ProductImage, ProductCategory, Profile],
+    entities: [Product, ProductImage, ProductSize, ProductCategory, Profile],
     synchronize: false, // Ne jamais mettre true en production !
     logging: process.env.NODE_ENV === "development",
   };
@@ -63,36 +64,46 @@ export async function getDataSource(): Promise<DataSource> {
 
 // Pour les migrations CLI - Configuration utilisée par TypeORM CLI
 function getDataSourceConfigForCLI() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const entities = [
+    join(process.cwd(), "lib", "database", "entities", "*.{ts,js}"),
+  ];
+  const migrations = [
+    join(process.cwd(), "lib", "database", "migrations", "*.{ts,js}"),
+  ];
+  const common = {
+    type: "postgres" as const,
+    ssl: { rejectUnauthorized: false },
+    entities,
+    migrations,
+    synchronize: false,
+    logging: process.env.NODE_ENV === "development",
+  };
 
+  // Priorité au pooler (DATABASE_URL) : la connexion directe
+  // db.<ref>.supabase.co est IPv6-only / injoignable depuis beaucoup d'environnements.
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    return { ...common, url: databaseUrl };
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined");
   }
-
+  if (!process.env.SUPABASE_DB_PASSWORD) {
+    throw new Error("SUPABASE_DB_PASSWORD is not defined");
+  }
   const projectRef = supabaseUrl
     .replace("https://", "")
     .replace(".supabase.co", "");
 
-  if (!process.env.SUPABASE_DB_PASSWORD) {
-    throw new Error("SUPABASE_DB_PASSWORD is not defined");
-  }
-
   return {
-    type: "postgres" as const,
+    ...common,
     host: `db.${projectRef}.supabase.co`,
     port: 5432,
     username: "postgres",
     password: process.env.SUPABASE_DB_PASSWORD,
     database: "postgres",
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    entities: [join(process.cwd(), "lib", "database", "entities", "*.{ts,js}")],
-    migrations: [
-      join(process.cwd(), "lib", "database", "migrations", "*.{ts,js}"),
-    ],
-    synchronize: false,
-    logging: process.env.NODE_ENV === "development",
   };
 }
 
